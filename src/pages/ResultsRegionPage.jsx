@@ -26,7 +26,7 @@ import {
   extNodeCoordMap, buildExtFlowFeatures, bindExtFlowHandlers, addExtPriceDots,
 } from '../utils/extZones';
 import { addOffgridLayers } from '../utils/offgridZones';
-import { fetchCountries, fetchBoundaries, addCountriesSource, addBoundariesSource, raiseBoundaries } from '../utils/basemap';
+import { raiseBoundaries } from '../utils/basemap';
 import { buildWbStyle, useWbStyleBase, ZONE_MAP_VIEW } from '../utils/wbStyle';
 import { baseFirst, baseScenario, defaultScenarios } from '../utils/scenarioOrder';
 import { physicalStats } from '../utils/summaryStats';
@@ -573,21 +573,6 @@ export default function ResultsRegionPage() {
       }
       if (!map.hasImage('ntc-arrow')) map.addImage('ntc-arrow', { width:aW, height:aH, data:aData }, { sdf:true });
 
-      // The basemap is the backdrop. Everything that matters is added after it, so a
-      // file that fails to arrive, or a map removed while these were in flight, must
-      // not take the zone and corridor layers down with it.
-      let countries = null, boundaries = null;
-      try {
-        countries = await fetchCountries('10m');
-        boundaries = await fetchBoundaries('10m');
-      } catch (err) {
-        console.warn('basemap unavailable, drawing zones only', err);
-      }
-      if (!alive(map)) return;
-      if (countries) {
-        addCountriesSource(map, countries);
-        addBoundariesSource(map, boundaries || { type:'FeatureCollection', features:[] });
-      }
 
       const isoToCountry = {};
       for (const f of zonesGJ.features) isoToCountry[f.properties.ISO_A3]=f.properties.c;

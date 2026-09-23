@@ -30,7 +30,7 @@ import { zoneCentroidMap } from '../utils/centroids';
 import VariantPicker from '../components/VariantPicker';
 import ScenarioTab from '../components/ScenarioTab';
 import { fetchScenarioDocs, scenarioDocIndex } from '../utils/scenarioDocs';
-import { fetchCountries, fetchBoundaries, addCountriesSource, addBoundariesSource, regionFilter, addRegionCoast, raiseBoundaries } from '../utils/basemap';
+import { fetchGeo, addCountriesSource, regionFilter, raiseBoundaries } from '../utils/basemap';
 import { buildWbStyle, applyWbView, useWbStyleBase, ZONE_MAP_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source } from '../utils/mapSource';
 import { usePromotedEpmData } from '../utils/usePromotedZones';
@@ -2252,15 +2252,13 @@ export default function RegionPage() {
     });
 
     map.on('load', async () => {
-      const countries = await fetchCountries('10m');
-      const boundaries = await fetchBoundaries('10m');
+      const countries = await fetchGeo('region', region.id);
 
       const bounds = fitBounds(isos, countries);
       if (bounds) map.fitBounds(bounds, { padding: 40, duration: 0 });
 
       addCountriesSource(map, countries);
       const tv = getT(theme);
-      addBoundariesSource(map, boundaries);
 
       if (isEpm) {
         // ── EPM map: zone polygons + NTC lines + country donut markers ───────
@@ -2491,8 +2489,6 @@ export default function RegionPage() {
         map.addLayer({ id: 'region-border', type: 'line', source: 'countries',
           filter: ['in', ['get', 'ISO_A3'], ['literal', isos]],
           paint: { 'line-color': hl.border, 'line-width': hl.borderW, 'line-opacity': 0.9 } });
-        addRegionCoast(map, { areas: region.non_determined, color: hl.border,
-          width: hl.borderW, opacity: 0.9 });
 
         const fuels = new Set();
         for (const f of plantsGJ.features) {

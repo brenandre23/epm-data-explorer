@@ -1,1 +1,766 @@
-{"regions": [{"id": "blacksea", "name": "Black Sea", "status": "available", "color": "#1E6DB8", "countries": [{"iso": "TUR", "name": "Turkey"}, {"iso": "ROU", "name": "Romania"}, {"iso": "BGR", "name": "Bulgaria"}, {"iso": "GEO", "name": "Georgia"}, {"iso": "ARM", "name": "Armenia"}, {"iso": "AZE", "name": "Azerbaijan"}]}, {"id": "wapp", "name": "Western Africa Power Pool", "status": "available", "color": "#C47C2A", "epm": {"branch": "wapp_2026", "dataFolder": "data_wapp"}, "countries": [{"iso": "SEN", "name": "Senegal"}, {"iso": "GMB", "name": "Gambia"}, {"iso": "GNB", "name": "Guinea-Bissau"}, {"iso": "GIN", "name": "Guinea"}, {"iso": "SLE", "name": "Sierra Leone"}, {"iso": "LBR", "name": "Liberia"}, {"iso": "CIV", "name": "Cote d'Ivoire"}, {"iso": "GHA", "name": "Ghana"}, {"iso": "TGO", "name": "Togo"}, {"iso": "BEN", "name": "Benin"}, {"iso": "NGA", "name": "Nigeria"}, {"iso": "NER", "name": "Niger"}, {"iso": "MLI", "name": "Mali"}, {"iso": "BFA", "name": "Burkina Faso"}, {"iso": "MRT", "name": "Mauritania"}, {"iso": "CPV", "name": "Cape Verde"}]}, {"id": "capp", "name": "Central Africa Power Pool", "status": "available", "color": "#2A88C8", "epm": {"branch": "capp_2025", "dataFolder": "data_capp"}, "countries": [{"iso": "CMR", "name": "Cameroon"}, {"iso": "CAF", "name": "Central African Republic"}, {"iso": "TCD", "name": "Chad"}, {"iso": "COD", "name": "DR Congo"}, {"iso": "COG", "name": "Republic of Congo"}, {"iso": "GAB", "name": "Gabon"}, {"iso": "GNQ", "name": "Equatorial Guinea"}, {"iso": "STP", "name": "Sao Tome and Principe"}]}, {"id": "eapp", "non_determined": ["Abyei"], "name": "Eastern Africa Power Pool", "status": "available", "color": "#1AA8B0", "epm": {"branch": "eapp_2026", "dataFolder": "data_eapp"}, "countries": [{"iso": "EGY", "name": "Egypt"}, {"iso": "SDN", "name": "Sudan"}, {"iso": "SSD", "name": "South Sudan"}, {"iso": "ETH", "name": "Ethiopia"}, {"iso": "DJI", "name": "Djibouti"}, {"iso": "SOM", "name": "Somalia"}, {"iso": "KEN", "name": "Kenya"}, {"iso": "UGA", "name": "Uganda"}, {"iso": "RWA", "name": "Rwanda"}, {"iso": "BDI", "name": "Burundi"}, {"iso": "TZA", "name": "Tanzania"}, {"iso": "COD", "name": "DR Congo"}, {"iso": "LBY", "name": "Libya"}]}, {"id": "sapp", "name": "Southern Africa Power Pool", "status": "available", "color": "#6098D0", "epm": {"branch": "sapp_new2025", "dataFolder": "data_sapp_june26", "scenariosFile": "scenarios_sapp.csv", "dataFolders": [{"id": "data_sapp_june26", "label": "SAPP 2026"}, {"id": "data_sapp_jun26_agg", "label": "SAPP 2026 (aggregated)"}, {"id": "data_sapp_feb26", "label": "SAPP Feb 2026"}, {"id": "data_sapp", "label": "SAPP (legacy)"}, {"id": "data_zim", "label": "Zimbabwe"}]}, "countries": [{"iso": "ZAF", "name": "South Africa"}, {"iso": "ZWE", "name": "Zimbabwe"}, {"iso": "ZMB", "name": "Zambia"}, {"iso": "BWA", "name": "Botswana"}, {"iso": "MOZ", "name": "Mozambique"}, {"iso": "MWI", "name": "Malawi"}, {"iso": "NAM", "name": "Namibia"}, {"iso": "LSO", "name": "Lesotho"}, {"iso": "SWZ", "name": "Eswatini"}, {"iso": "MDG", "name": "Madagascar"}, {"iso": "AGO", "name": "Angola"}, {"iso": "TZA", "name": "Tanzania"}, {"iso": "COD", "name": "DR Congo"}]}, {"id": "panarab", "non_determined": ["Western Sahara"], "name": "Pan-Arab", "status": "available", "color": "#C4A020", "countries": [{"iso": "MAR", "name": "Morocco"}, {"iso": "DZA", "name": "Algeria"}, {"iso": "TUN", "name": "Tunisia"}, {"iso": "LBY", "name": "Libya"}, {"iso": "EGY", "name": "Egypt"}, {"iso": "JOR", "name": "Jordan"}, {"iso": "LBN", "name": "Lebanon"}, {"iso": "SYR", "name": "Syria"}, {"iso": "IRQ", "name": "Iraq"}, {"iso": "SAU", "name": "Saudi Arabia"}, {"iso": "YEM", "name": "Yemen"}, {"iso": "OMN", "name": "Oman"}, {"iso": "ARE", "name": "UAE"}, {"iso": "QAT", "name": "Qatar"}, {"iso": "BHR", "name": "Bahrain"}, {"iso": "KWT", "name": "Kuwait"}, {"iso": "PSE", "name": "Palestine"}]}, {"id": "balkans", "name": "Western Balkans 6", "status": "available", "color": "#3A6098", "countries": [{"iso": "ALB", "name": "Albania"}, {"iso": "BIH", "name": "Bosnia and Herzegovina"}, {"iso": "MKD", "name": "North Macedonia"}, {"iso": "MNE", "name": "Montenegro"}, {"iso": "SRB", "name": "Serbia"}, {"iso": "KOS", "name": "Kosovo"}]}, {"id": "southasia", "non_determined": ["Arunchal Pradesh", "Disputed Area: IND/PAK"], "name": "South Asia", "status": "available", "color": "#1A8AAA", "countries": [{"iso": "IND", "name": "India"}, {"iso": "PAK", "name": "Pakistan"}, {"iso": "BGD", "name": "Bangladesh"}, {"iso": "LKA", "name": "Sri Lanka"}, {"iso": "NPL", "name": "Nepal"}, {"iso": "BTN", "name": "Bhutan"}, {"iso": "AFG", "name": "Afghanistan"}, {"iso": "MDV", "name": "Maldives"}]}, {"id": "centralasia", "name": "Central Asia", "status": "available", "color": "#2A4E8E", "countries": [{"iso": "KAZ", "name": "Kazakhstan"}, {"iso": "KGZ", "name": "Kyrgyzstan"}, {"iso": "TJK", "name": "Tajikistan"}, {"iso": "TKM", "name": "Turkmenistan"}, {"iso": "UZB", "name": "Uzbekistan"}]}, {"id": "casa", "name": "Central Asia - South Asia (CASA)", "status": "available", "color": "#7A5AA8", "epm": {"branch": "ca_2026", "dataFolder": "data_casa"}, "countries": [{"iso": "KAZ", "name": "Kazakhstan"}, {"iso": "KGZ", "name": "Kyrgyzstan"}, {"iso": "TJK", "name": "Tajikistan"}, {"iso": "TKM", "name": "Turkmenistan"}, {"iso": "UZB", "name": "Uzbekistan"}, {"iso": "AFG", "name": "Afghanistan"}, {"iso": "PAK", "name": "Pakistan"}]}, {"id": "asean", "name": "ASEAN Power Grid", "status": "available", "color": "#1A9080", "countries": [{"iso": "BRN", "name": "Brunei"}, {"iso": "KHM", "name": "Cambodia"}, {"iso": "IDN", "name": "Indonesia"}, {"iso": "LAO", "name": "Laos"}, {"iso": "MYS", "name": "Malaysia"}, {"iso": "MMR", "name": "Myanmar"}, {"iso": "PHL", "name": "Philippines"}, {"iso": "SGP", "name": "Singapore"}, {"iso": "THA", "name": "Thailand"}, {"iso": "VNM", "name": "Vietnam"}]}, {"id": "mexico", "name": "Mexico", "status": "available", "color": "#B4553C", "epm": {"branch": "mexico_old", "dataFolder": "data_mexico_ccdr"}, "countries": [{"iso": "MEX", "name": "Mexico"}]}, {"id": "siepac", "name": "SIEPAC", "status": "available", "color": "#3A9040", "countries": [{"iso": "GTM", "name": "Guatemala"}, {"iso": "HND", "name": "Honduras"}, {"iso": "SLV", "name": "El Salvador"}, {"iso": "NIC", "name": "Nicaragua"}, {"iso": "CRI", "name": "Costa Rica"}, {"iso": "PAN", "name": "Panama"}]}, {"id": "eu", "non_determined": ["UN Buffer Zone in Cyprus"], "name": "European Union", "status": "available", "color": "#4870C0", "countries": [{"iso": "AUT", "name": "Austria"}, {"iso": "BEL", "name": "Belgium"}, {"iso": "BGR", "name": "Bulgaria"}, {"iso": "HRV", "name": "Croatia"}, {"iso": "CYP", "name": "Cyprus"}, {"iso": "CZE", "name": "Czechia"}, {"iso": "DNK", "name": "Denmark"}, {"iso": "EST", "name": "Estonia"}, {"iso": "FIN", "name": "Finland"}, {"iso": "FRA", "name": "France"}, {"iso": "DEU", "name": "Germany"}, {"iso": "GRC", "name": "Greece"}, {"iso": "HUN", "name": "Hungary"}, {"iso": "IRL", "name": "Ireland"}, {"iso": "ITA", "name": "Italy"}, {"iso": "LVA", "name": "Latvia"}, {"iso": "LTU", "name": "Lithuania"}, {"iso": "LUX", "name": "Luxembourg"}, {"iso": "MLT", "name": "Malta"}, {"iso": "NLD", "name": "Netherlands"}, {"iso": "POL", "name": "Poland"}, {"iso": "PRT", "name": "Portugal"}, {"iso": "ROU", "name": "Romania"}, {"iso": "SVK", "name": "Slovakia"}, {"iso": "SVN", "name": "Slovenia"}, {"iso": "ESP", "name": "Spain"}, {"iso": "SWE", "name": "Sweden"}]}]}
+{
+ "regions": [
+  {
+   "id": "blacksea",
+   "name": "Black Sea",
+   "status": "available",
+   "color": "#1E6DB8",
+   "countries": [
+    {
+     "iso": "TUR",
+     "name": "Turkey"
+    },
+    {
+     "iso": "ROU",
+     "name": "Romania"
+    },
+    {
+     "iso": "BGR",
+     "name": "Bulgaria"
+    },
+    {
+     "iso": "GEO",
+     "name": "Georgia"
+    },
+    {
+     "iso": "ARM",
+     "name": "Armenia"
+    },
+    {
+     "iso": "AZE",
+     "name": "Azerbaijan"
+    }
+   ]
+  },
+  {
+   "id": "wapp",
+   "name": "Western Africa Power Pool",
+   "status": "available",
+   "color": "#C47C2A",
+   "epm": {
+    "branch": "wapp_2026",
+    "dataFolder": "data_wapp"
+   },
+   "countries": [
+    {
+     "iso": "SEN",
+     "name": "Senegal"
+    },
+    {
+     "iso": "GMB",
+     "name": "Gambia"
+    },
+    {
+     "iso": "GNB",
+     "name": "Guinea-Bissau"
+    },
+    {
+     "iso": "GIN",
+     "name": "Guinea"
+    },
+    {
+     "iso": "SLE",
+     "name": "Sierra Leone"
+    },
+    {
+     "iso": "LBR",
+     "name": "Liberia"
+    },
+    {
+     "iso": "CIV",
+     "name": "Cote d'Ivoire"
+    },
+    {
+     "iso": "GHA",
+     "name": "Ghana"
+    },
+    {
+     "iso": "TGO",
+     "name": "Togo"
+    },
+    {
+     "iso": "BEN",
+     "name": "Benin"
+    },
+    {
+     "iso": "NGA",
+     "name": "Nigeria"
+    },
+    {
+     "iso": "NER",
+     "name": "Niger"
+    },
+    {
+     "iso": "MLI",
+     "name": "Mali"
+    },
+    {
+     "iso": "BFA",
+     "name": "Burkina Faso"
+    },
+    {
+     "iso": "MRT",
+     "name": "Mauritania"
+    },
+    {
+     "iso": "CPV",
+     "name": "Cape Verde"
+    }
+   ]
+  },
+  {
+   "id": "capp",
+   "name": "Central Africa Power Pool",
+   "status": "available",
+   "color": "#2A88C8",
+   "epm": {
+    "branch": "capp_2025",
+    "dataFolder": "data_capp"
+   },
+   "countries": [
+    {
+     "iso": "CMR",
+     "name": "Cameroon"
+    },
+    {
+     "iso": "CAF",
+     "name": "Central African Republic"
+    },
+    {
+     "iso": "TCD",
+     "name": "Chad"
+    },
+    {
+     "iso": "COD",
+     "name": "DR Congo"
+    },
+    {
+     "iso": "COG",
+     "name": "Republic of Congo"
+    },
+    {
+     "iso": "GAB",
+     "name": "Gabon"
+    },
+    {
+     "iso": "GNQ",
+     "name": "Equatorial Guinea"
+    },
+    {
+     "iso": "STP",
+     "name": "Sao Tome and Principe"
+    }
+   ]
+  },
+  {
+   "id": "eapp",
+   "non_determined": [
+    "Abyei",
+    "Ilemi Triangle"
+   ],
+   "name": "Eastern Africa Power Pool",
+   "status": "available",
+   "color": "#1AA8B0",
+   "epm": {
+    "branch": "eapp_2026",
+    "dataFolder": "data_eapp"
+   },
+   "countries": [
+    {
+     "iso": "EGY",
+     "name": "Egypt"
+    },
+    {
+     "iso": "SDN",
+     "name": "Sudan"
+    },
+    {
+     "iso": "SSD",
+     "name": "South Sudan"
+    },
+    {
+     "iso": "ETH",
+     "name": "Ethiopia"
+    },
+    {
+     "iso": "DJI",
+     "name": "Djibouti"
+    },
+    {
+     "iso": "SOM",
+     "name": "Somalia"
+    },
+    {
+     "iso": "KEN",
+     "name": "Kenya"
+    },
+    {
+     "iso": "UGA",
+     "name": "Uganda"
+    },
+    {
+     "iso": "RWA",
+     "name": "Rwanda"
+    },
+    {
+     "iso": "BDI",
+     "name": "Burundi"
+    },
+    {
+     "iso": "TZA",
+     "name": "Tanzania"
+    },
+    {
+     "iso": "COD",
+     "name": "DR Congo"
+    },
+    {
+     "iso": "LBY",
+     "name": "Libya"
+    }
+   ]
+  },
+  {
+   "id": "sapp",
+   "name": "Southern Africa Power Pool",
+   "status": "available",
+   "color": "#6098D0",
+   "epm": {
+    "branch": "sapp_new2025",
+    "dataFolder": "data_sapp_june26",
+    "scenariosFile": "scenarios_sapp.csv",
+    "dataFolders": [
+     {
+      "id": "data_sapp_june26",
+      "label": "SAPP 2026"
+     },
+     {
+      "id": "data_sapp_jun26_agg",
+      "label": "SAPP 2026 (aggregated)"
+     },
+     {
+      "id": "data_sapp_feb26",
+      "label": "SAPP Feb 2026"
+     },
+     {
+      "id": "data_sapp",
+      "label": "SAPP (legacy)"
+     },
+     {
+      "id": "data_zim",
+      "label": "Zimbabwe"
+     }
+    ]
+   },
+   "countries": [
+    {
+     "iso": "ZAF",
+     "name": "South Africa"
+    },
+    {
+     "iso": "ZWE",
+     "name": "Zimbabwe"
+    },
+    {
+     "iso": "ZMB",
+     "name": "Zambia"
+    },
+    {
+     "iso": "BWA",
+     "name": "Botswana"
+    },
+    {
+     "iso": "MOZ",
+     "name": "Mozambique"
+    },
+    {
+     "iso": "MWI",
+     "name": "Malawi"
+    },
+    {
+     "iso": "NAM",
+     "name": "Namibia"
+    },
+    {
+     "iso": "LSO",
+     "name": "Lesotho"
+    },
+    {
+     "iso": "SWZ",
+     "name": "Eswatini"
+    },
+    {
+     "iso": "MDG",
+     "name": "Madagascar"
+    },
+    {
+     "iso": "AGO",
+     "name": "Angola"
+    },
+    {
+     "iso": "TZA",
+     "name": "Tanzania"
+    },
+    {
+     "iso": "COD",
+     "name": "DR Congo"
+    }
+   ]
+  },
+  {
+   "id": "panarab",
+   "non_determined": [
+    "Golan Heights",
+    "No Man's Land",
+    "Shebaa Farms Dispute",
+    "Western Sahara"
+   ],
+   "name": "Pan-Arab",
+   "status": "available",
+   "color": "#C4A020",
+   "countries": [
+    {
+     "iso": "MAR",
+     "name": "Morocco"
+    },
+    {
+     "iso": "DZA",
+     "name": "Algeria"
+    },
+    {
+     "iso": "TUN",
+     "name": "Tunisia"
+    },
+    {
+     "iso": "LBY",
+     "name": "Libya"
+    },
+    {
+     "iso": "EGY",
+     "name": "Egypt"
+    },
+    {
+     "iso": "JOR",
+     "name": "Jordan"
+    },
+    {
+     "iso": "LBN",
+     "name": "Lebanon"
+    },
+    {
+     "iso": "SYR",
+     "name": "Syria"
+    },
+    {
+     "iso": "IRQ",
+     "name": "Iraq"
+    },
+    {
+     "iso": "SAU",
+     "name": "Saudi Arabia"
+    },
+    {
+     "iso": "YEM",
+     "name": "Yemen"
+    },
+    {
+     "iso": "OMN",
+     "name": "Oman"
+    },
+    {
+     "iso": "ARE",
+     "name": "UAE"
+    },
+    {
+     "iso": "QAT",
+     "name": "Qatar"
+    },
+    {
+     "iso": "BHR",
+     "name": "Bahrain"
+    },
+    {
+     "iso": "KWT",
+     "name": "Kuwait"
+    },
+    {
+     "iso": "PSE",
+     "name": "Palestine"
+    }
+   ]
+  },
+  {
+   "id": "balkans",
+   "name": "Western Balkans 6",
+   "status": "available",
+   "color": "#3A6098",
+   "countries": [
+    {
+     "iso": "ALB",
+     "name": "Albania"
+    },
+    {
+     "iso": "BIH",
+     "name": "Bosnia and Herzegovina"
+    },
+    {
+     "iso": "MKD",
+     "name": "North Macedonia"
+    },
+    {
+     "iso": "MNE",
+     "name": "Montenegro"
+    },
+    {
+     "iso": "SRB",
+     "name": "Serbia"
+    },
+    {
+     "iso": "KOS",
+     "name": "Kosovo"
+    }
+   ]
+  },
+  {
+   "id": "southasia",
+   "non_determined": [
+    "Aksai Chin",
+    "Arunachal Pradesh",
+    "Chumar East",
+    "Chumar West",
+    "Demchok",
+    "Doklam",
+    "Jadh Ganga Valley",
+    "Jammu and Kashmir",
+    "Kalapani",
+    "Karakoram Range",
+    "Kauirik",
+    "Lapthal",
+    "Shipki Pass"
+   ],
+   "name": "South Asia",
+   "status": "available",
+   "color": "#1A8AAA",
+   "countries": [
+    {
+     "iso": "IND",
+     "name": "India"
+    },
+    {
+     "iso": "PAK",
+     "name": "Pakistan"
+    },
+    {
+     "iso": "BGD",
+     "name": "Bangladesh"
+    },
+    {
+     "iso": "LKA",
+     "name": "Sri Lanka"
+    },
+    {
+     "iso": "NPL",
+     "name": "Nepal"
+    },
+    {
+     "iso": "BTN",
+     "name": "Bhutan"
+    },
+    {
+     "iso": "AFG",
+     "name": "Afghanistan"
+    },
+    {
+     "iso": "MDV",
+     "name": "Maldives"
+    }
+   ]
+  },
+  {
+   "id": "centralasia",
+   "name": "Central Asia",
+   "status": "available",
+   "color": "#2A4E8E",
+   "countries": [
+    {
+     "iso": "KAZ",
+     "name": "Kazakhstan"
+    },
+    {
+     "iso": "KGZ",
+     "name": "Kyrgyzstan"
+    },
+    {
+     "iso": "TJK",
+     "name": "Tajikistan"
+    },
+    {
+     "iso": "TKM",
+     "name": "Turkmenistan"
+    },
+    {
+     "iso": "UZB",
+     "name": "Uzbekistan"
+    }
+   ]
+  },
+  {
+   "id": "casa",
+   "name": "Central Asia - South Asia (CASA)",
+   "status": "available",
+   "color": "#7A5AA8",
+   "epm": {
+    "branch": "ca_2026",
+    "dataFolder": "data_casa"
+   },
+   "countries": [
+    {
+     "iso": "KAZ",
+     "name": "Kazakhstan"
+    },
+    {
+     "iso": "KGZ",
+     "name": "Kyrgyzstan"
+    },
+    {
+     "iso": "TJK",
+     "name": "Tajikistan"
+    },
+    {
+     "iso": "TKM",
+     "name": "Turkmenistan"
+    },
+    {
+     "iso": "UZB",
+     "name": "Uzbekistan"
+    },
+    {
+     "iso": "AFG",
+     "name": "Afghanistan"
+    },
+    {
+     "iso": "PAK",
+     "name": "Pakistan"
+    }
+   ],
+   "non_determined": [
+    "Jammu and Kashmir"
+   ]
+  },
+  {
+   "id": "asean",
+   "name": "ASEAN Power Grid",
+   "status": "available",
+   "color": "#1A9080",
+   "countries": [
+    {
+     "iso": "BRN",
+     "name": "Brunei"
+    },
+    {
+     "iso": "KHM",
+     "name": "Cambodia"
+    },
+    {
+     "iso": "IDN",
+     "name": "Indonesia"
+    },
+    {
+     "iso": "LAO",
+     "name": "Laos"
+    },
+    {
+     "iso": "MYS",
+     "name": "Malaysia"
+    },
+    {
+     "iso": "MMR",
+     "name": "Myanmar"
+    },
+    {
+     "iso": "PHL",
+     "name": "Philippines"
+    },
+    {
+     "iso": "SGP",
+     "name": "Singapore"
+    },
+    {
+     "iso": "THA",
+     "name": "Thailand"
+    },
+    {
+     "iso": "VNM",
+     "name": "Vietnam"
+    }
+   ]
+  },
+  {
+   "id": "mexico",
+   "name": "Mexico",
+   "status": "available",
+   "color": "#B4553C",
+   "epm": {
+    "branch": "mexico_old",
+    "dataFolder": "data_mexico_ccdr"
+   },
+   "countries": [
+    {
+     "iso": "MEX",
+     "name": "Mexico"
+    }
+   ]
+  },
+  {
+   "id": "siepac",
+   "name": "SIEPAC",
+   "status": "available",
+   "color": "#3A9040",
+   "countries": [
+    {
+     "iso": "GTM",
+     "name": "Guatemala"
+    },
+    {
+     "iso": "HND",
+     "name": "Honduras"
+    },
+    {
+     "iso": "SLV",
+     "name": "El Salvador"
+    },
+    {
+     "iso": "NIC",
+     "name": "Nicaragua"
+    },
+    {
+     "iso": "CRI",
+     "name": "Costa Rica"
+    },
+    {
+     "iso": "PAN",
+     "name": "Panama"
+    }
+   ]
+  },
+  {
+   "id": "eu",
+   "non_determined": [
+    "UN Buffer Zone"
+   ],
+   "name": "European Union",
+   "status": "available",
+   "color": "#4870C0",
+   "countries": [
+    {
+     "iso": "AUT",
+     "name": "Austria"
+    },
+    {
+     "iso": "BEL",
+     "name": "Belgium"
+    },
+    {
+     "iso": "BGR",
+     "name": "Bulgaria"
+    },
+    {
+     "iso": "HRV",
+     "name": "Croatia"
+    },
+    {
+     "iso": "CYP",
+     "name": "Cyprus"
+    },
+    {
+     "iso": "CZE",
+     "name": "Czechia"
+    },
+    {
+     "iso": "DNK",
+     "name": "Denmark"
+    },
+    {
+     "iso": "EST",
+     "name": "Estonia"
+    },
+    {
+     "iso": "FIN",
+     "name": "Finland"
+    },
+    {
+     "iso": "FRA",
+     "name": "France"
+    },
+    {
+     "iso": "DEU",
+     "name": "Germany"
+    },
+    {
+     "iso": "GRC",
+     "name": "Greece"
+    },
+    {
+     "iso": "HUN",
+     "name": "Hungary"
+    },
+    {
+     "iso": "IRL",
+     "name": "Ireland"
+    },
+    {
+     "iso": "ITA",
+     "name": "Italy"
+    },
+    {
+     "iso": "LVA",
+     "name": "Latvia"
+    },
+    {
+     "iso": "LTU",
+     "name": "Lithuania"
+    },
+    {
+     "iso": "LUX",
+     "name": "Luxembourg"
+    },
+    {
+     "iso": "MLT",
+     "name": "Malta"
+    },
+    {
+     "iso": "NLD",
+     "name": "Netherlands"
+    },
+    {
+     "iso": "POL",
+     "name": "Poland"
+    },
+    {
+     "iso": "PRT",
+     "name": "Portugal"
+    },
+    {
+     "iso": "ROU",
+     "name": "Romania"
+    },
+    {
+     "iso": "SVK",
+     "name": "Slovakia"
+    },
+    {
+     "iso": "SVN",
+     "name": "Slovenia"
+    },
+    {
+     "iso": "ESP",
+     "name": "Spain"
+    },
+    {
+     "iso": "SWE",
+     "name": "Sweden"
+    }
+   ]
+  }
+ ]
+}

@@ -17,7 +17,7 @@ import { addOffgridLayers } from '../utils/offgridZones';
 import { fetchScenarioConfig, resolveFile, baseName } from '../utils/epmScenarios';
 import { zoneCentroidMap } from '../utils/centroids';
 import VariantPicker from '../components/VariantPicker';
-import { fetchCountries, fetchBoundaries, addCountriesSource, addBoundariesSource, raiseBoundaries } from '../utils/basemap';
+import { raiseBoundaries } from '../utils/basemap';
 import { buildWbStyle, useWbStyleBase, ZONE_MAP_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source } from '../utils/mapSource';
 import { usePromotedEpmData } from '../utils/usePromotedZones';
@@ -426,10 +426,6 @@ export default function EpmCountryPage() {
       const tv = getT(theme);
       if (bounds) map.fitBounds(bounds, { padding: 60, duration: 0, maxZoom: 8 });
 
-      const countries = await fetchCountries('10m');
-      const boundaries = await fetchBoundaries('10m');
-      addCountriesSource(map, countries);
-      addBoundariesSource(map, boundaries);
 
       if (zonesGJ) {
         const regionCountries = [...new Set(zcmapRows.map(r => r.c))].sort();

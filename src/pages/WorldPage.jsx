@@ -5,7 +5,7 @@ import MapDownload from '../components/MapDownload';
 import { ttl } from '../utils/chartTitle';
 import { useTheme } from '../App';
 import { getT } from '../constants';
-import { fetchCountries, fetchBoundaries, addCountriesSource, addBoundariesSource, regionFilter, addRegionCoast, raiseBoundaries } from '../utils/basemap';
+import { fetchGeo, addCountriesSource, regionFilter, raiseBoundaries } from '../utils/basemap';
 import { buildWbStyle, useWbStyleBase, DEFAULT_WB_VIEW } from '../utils/wbStyle';
 import { dataPath } from '../utils/paths';
 
@@ -66,11 +66,9 @@ export default function WorldPage() {
     map.on('movestart', () => setDisambig(null));
 
     map.on('load', async () => {
-      const countries = await fetchCountries('110m');
-      const boundaries = await fetchBoundaries('110m');
+      const countries = await fetchGeo('world');
 
       addCountriesSource(map, countries);
-      addBoundariesSource(map, boundaries);
 
       // Non-EPM regions: no highlight, blend into background
 
@@ -105,15 +103,6 @@ export default function WorldPage() {
           source: 'countries',
           filter: ['in', ['get', 'ISO_A3'], ['literal', clickableIsos]],
           paint: { 'line-color': colorExpr, 'line-width': 0.9, 'line-opacity': 0.7 },
-        });
-
-        // The areas take the same outline, keyed on the only name they carry.
-        addRegionCoast(map, {
-          areas: clickableAreas,
-          color: ['match', ['get', 'NAME'],
-            ...clickableAreas.flatMap(a => [a, areaToRegions[a][0].color]),
-            'transparent'],
-          width: 0.9, opacity: 0.7,
         });
       }
 

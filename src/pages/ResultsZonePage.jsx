@@ -18,7 +18,7 @@ import {
   extNodeCoordMap, buildExtFlowFeatures, updateExtFlows, bindExtFlowHandlers,
 } from '../utils/extZones';
 import { addOffgridLayers } from '../utils/offgridZones';
-import { fetchCountries, fetchBoundaries, addCountriesSource, addBoundariesSource, raiseBoundaries } from '../utils/basemap';
+import { raiseBoundaries } from '../utils/basemap';
 import { buildWbStyle, useWbStyleBase, ZONE_MAP_VIEW } from '../utils/wbStyle';
 import { source, markStyleReady, styleReady } from '../utils/mapSource';
 import { zoneCentroidMap } from '../utils/centroids';
@@ -175,10 +175,6 @@ export default function ResultsZonePage() {
     const ntcClickPopup=new maplibregl.Popup({closeButton:true,closeOnClick:true,offset:10,className:`popup-${theme}`});
     map.on('load',async()=>{
       const tv=getT(theme);
-      const countries=await fetchCountries('10m');
-      const boundaries=await fetchBoundaries('10m');
-      addCountriesSource(map,countries);
-      addBoundariesSource(map,boundaries);
       const isoToC={};for(const f of zonesGJ.features)isoToC[f.properties.ISO_A3]=f.properties.c;
       const uIsos=[...new Set(zonesGJ.features.map(f=>f.properties.ISO_A3))];
       const fillExpr=['match',['get','ISO_A3'],...uIsos.flatMap(iso=>[iso,colorMap[isoToC[iso]]||'#888']),'transparent'];

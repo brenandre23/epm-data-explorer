@@ -17,7 +17,7 @@ import { fetchScenarioConfig, resolveFile } from '../utils/epmScenarios';
 import { zoneCentroidMap } from '../utils/centroids';
 import VariantPicker from '../components/VariantPicker';
 import ScenarioTab from '../components/ScenarioTab';
-import { fetchCountries, fetchBoundaries, addCountriesSource, addBoundariesSource, raiseBoundaries } from '../utils/basemap';
+import { raiseBoundaries } from '../utils/basemap';
 import { buildWbStyle, useWbStyleBase, ZONE_MAP_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source, layer } from '../utils/mapSource';
 import { usePromotedEpmData } from '../utils/usePromotedZones';
@@ -343,10 +343,6 @@ export default function EpmZonePage() {
     map.on('load', async () => {
       const tv = getT(theme);
 
-      const countries = await fetchCountries('10m');
-      const boundaries = await fetchBoundaries('10m');
-      addCountriesSource(map, countries);
-      addBoundariesSource(map, boundaries);
 
       if (zonesGJ) {
         const regionCountries = [...new Set(zcmapRows.map(r => r.c))].sort();

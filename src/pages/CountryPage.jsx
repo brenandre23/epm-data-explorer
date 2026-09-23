@@ -10,7 +10,7 @@ import CountryOverview from '../components/CountryOverview';
 import REResourcesTab from '../components/tabs/REResourcesTab';
 import LoadTab from '../components/tabs/LoadTab';
 import ZoningTab from '../components/tabs/ZoningTab';
-import { fetchCountries, fetchBoundaries, addCountriesSource, addBoundariesSource, raiseBoundaries } from '../utils/basemap';
+import { fetchGeo, addCountriesSource, raiseBoundaries } from '../utils/basemap';
 import { buildWbStyle, applyWbView, useWbStyleBase, DEFAULT_WB_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source, layer } from '../utils/mapSource';
 import { dataPath } from '../utils/paths';
@@ -151,9 +151,8 @@ export default function CountryPage() {
     });
 
     map.on('load', async () => {
-      const [countries, boundaries, plantsGJ, linesGJ, subsGJ, lcGJ, admin1GJ] = await Promise.all([
-        fetchCountries('10m'),
-        fetchBoundaries('10m'),
+      const [countries, plantsGJ, linesGJ, subsGJ, lcGJ, admin1GJ] = await Promise.all([
+        fetchGeo('country', iso),
         fetch(dataPath(`cache/region_plants_${region.id}.geojson`)).then(r => r.json()),
         fetch(dataPath(`cache/region_lines_${region.id}.geojson`)).then(r => r.json()),
         fetch(dataPath(`cache/region_substations_${region.id}.geojson`)).then(r => r.json()).catch(() => ({ type: 'FeatureCollection', features: [] })),
@@ -222,7 +221,6 @@ export default function CountryPage() {
 
       const tv = getT(theme);
 
-      addBoundariesSource(map, boundaries);
 
       // Transmission lines
       const kvFilters = {

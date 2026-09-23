@@ -1,0 +1,35 @@
+{
+  "_about": [
+    "The World Bank's non-determined legal status areas, keyed on the Bank's own name (GAD NAM_0).",
+    "The Bank publishes no claimant field, so this table is cartographic policy maintained here.",
+    "Read by tools/prepare_gad.py (region membership) and src/utils/basemap.js (fill colour).",
+    "claimants: ISO_A3 of the parties. An area is drawn in the midpoint of its parties' fills.",
+    "fill: optional override -- {color} fixed fill, {neutral} never a party colour, {hatch} grey stripes.",
+    "REVIEW with the cartography owner before changing; every entry is a policy statement."
+  ],
+  "areas": {
+    "Aksai Chin":                               { "claimants": ["IND", "CHN"] },
+    "Arunachal Pradesh":                        { "claimants": ["IND", "CHN"] },
+    "Chumar East":                              { "claimants": ["IND", "CHN"] },
+    "Chumar West":                              { "claimants": ["IND", "CHN"] },
+    "Demchok":                                  { "claimants": ["IND", "CHN"] },
+    "Jadh Ganga Valley":                        { "claimants": ["IND", "CHN"] },
+    "Kauirik":                                  { "claimants": ["IND", "CHN"] },
+    "Lapthal":                                  { "claimants": ["IND", "CHN"] },
+    "Shipki Pass":                              { "claimants": ["IND", "CHN"] },
+    "Karakoram Range":                          { "claimants": ["IND", "CHN"] },
+    "Jammu and Kashmir":                        { "claimants": ["IND", "PAK"] },
+    "Doklam":                                   { "claimants": ["BTN", "CHN"] },
+    "Kalapani":                                 { "claimants": ["NPL", "IND"] },
+    "Abyei":                                    { "claimants": ["SDN", "SSD"] },
+    "Ilemi Triangle":                           { "claimants": ["KEN", "SSD"] },
+    "Western Sahara":                           { "claimants": ["MAR", "ESH"], "fill": { "color": "#D0965A" } },
+    "Golan Heights":                            { "claimants": ["SYR", "ISR"], "fill": { "hatch": true } },
+    "Shebaa Farms Dispute":                     { "claimants": ["LBN", "SYR", "ISR"] },
+    "No Man's Land":                            { "claimants": ["ISR", "PSE"] },
+    "UN Buffer Zone":                           { "claimants": ["CYP"] },
+    "British Indian Ocean Territory":           { "claimants": ["GBR", "MUS"] },
+    "Falkland Islands":                         { "claimants": ["GBR", "ARG"], "fill": { "neutral": true } },
+    "South Georgia and South Sandwich Islands": { "claimants": ["GBR", "ARG"], "fill": { "neutral": true } }
+  }
+}
