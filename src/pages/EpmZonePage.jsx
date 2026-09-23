@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import maplibregl from 'maplibre-gl';
 import { track } from '../analytics';
 import { useTheme } from '../App';
-import { getT, mapStyle } from '../constants';
+import { getT } from '../constants';
 import {
   fetchEpmCSV, fetchLinestringGeoJSON, fetchZonesGeoJSON, fetchZonesOffgridGeoJSON, fetchZcmapList, fetchDataFolderList,
   fetchRunList, fetchGitHubDir, fetchResultCSV, resolveOutputDir,
@@ -17,7 +17,8 @@ import { fetchScenarioConfig, resolveFile } from '../utils/epmScenarios';
 import { zoneCentroidMap } from '../utils/centroids';
 import VariantPicker from '../components/VariantPicker';
 import ScenarioTab from '../components/ScenarioTab';
-import { fetchCountries, fetchBoundaries, addCountriesSource, addBaseLayers, raiseBoundaries } from '../utils/basemap';
+import { fetchCountries, fetchBoundaries, addCountriesSource, addBoundariesSource, raiseBoundaries } from '../utils/basemap';
+import { buildWbStyle, useWbStyleBase, ZONE_MAP_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source, layer } from '../utils/mapSource';
 import { usePromotedEpmData } from '../utils/usePromotedZones';
 import CJChart from '../components/CJChart';
@@ -113,6 +114,7 @@ export default function EpmZonePage() {
   const { regionId, zoneId } = useParams();
   const zoneIdDecoded = decodeURIComponent(zoneId);
   const { theme } = useTheme();
+  const wbBase = useWbStyleBase();
   const t = getT(theme);
   const navigate = useNavigate();
 
@@ -320,7 +322,7 @@ export default function EpmZonePage() {
 
   // Build the map ONCE per region / data / theme — NOT per zone.
   useEffect(() => {
-    if (!containerRef.current || !region || !epmData) return;
+    if (!containerRef.current || !region || !epmData || !wbBase) return;
     const { linestringGJ, zonesGJ } = epmData;
     if (!linestringGJ && !zonesGJ) return;
 
@@ -331,7 +333,7 @@ export default function EpmZonePage() {
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: mapStyle(theme),
+      style: buildWbStyle(wbBase, getT(theme), ZONE_MAP_VIEW),
       center, zoom: 5, minZoom: 1, maxZoom: 14, canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl: false,
     });
     mapRef.current = map;
@@ -344,7 +346,7 @@ export default function EpmZonePage() {
       const countries = await fetchCountries('10m');
       const boundaries = await fetchBoundaries('10m');
       addCountriesSource(map, countries);
-      addBaseLayers(map, tv, boundaries);
+      addBoundariesSource(map, boundaries);
 
       if (zonesGJ) {
         const regionCountries = [...new Set(zcmapRows.map(r => r.c))].sort();
@@ -403,7 +405,7 @@ export default function EpmZonePage() {
           map.addLayer({ id:'ntc-lines-active', type:'line', source:'ntc-lines', filter:zoneNtcFilter, layout:{'line-cap':'round'},
             paint:{'line-color':'#f0b030','line-width':['interpolate',['linear'],['get','ntc_mw'],0,1,500,2,2000,3.5,8000,6],'line-opacity':0.95} });
           map.addLayer({ id:'ntc-labels', type:'symbol', source:'ntc-lines', filter:zoneNtcFilter,
-            layout:{'text-field':['concat',['to-string',['round',['get','ntc_mw']]],' MW'],'text-size':8,'symbol-placement':'line-center','text-allow-overlap':false},
+            layout:{'text-font':MAP_LABEL_FONT,'text-field':['concat',['to-string',['round',['get','ntc_mw']]],' MW'],'text-size':8,'symbol-placement':'line-center','text-allow-overlap':false},
             paint:{'text-color':'#b07800','text-halo-color':'rgba(255,255,255,0.9)','text-halo-width':1.5} });
         }
       }
@@ -424,7 +426,7 @@ export default function EpmZonePage() {
       markerRef.current = null;
       mapRef.current?.remove();
     };
-  }, [region, theme, epmData?.linestringGJ, epmData?.zonesGJ]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [region, theme, epmData?.linestringGJ, epmData?.zonesGJ, wbBase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Zone switch: update highlight + marker + recenter WITHOUT rebuilding the map ──
   useEffect(() => {

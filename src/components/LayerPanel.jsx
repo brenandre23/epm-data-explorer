@@ -80,7 +80,7 @@ export default function LayerPanel({
   minMw, circleScale,
   plantSource, gppdAvailable, gemAvailable,
   presentFuels,
-  basemap, onBasemap, satLabels, onSatLabels,
+  wbView, onWbView,
   onToggleFuel, onToggleStatus,
   onToggleKv, onToggleLines, onTogglePlants, onToggleSubs,
   onToggleLoadCenters, onLcMinPopChange, onLcCircleScaleChange,
@@ -132,18 +132,18 @@ export default function LayerPanel({
     }}>
 
       {/* ── BASEMAP ───────────────────────────────── */}
-      {onBasemap && (
+      {onWbView && (
         <div style={{ marginBottom: 14 }}>
           <span style={{ ...sec, display: 'block', marginBottom: 6 }}>Basemap</span>
           <div style={{ display: 'flex', gap: 4 }}>
             {[
-              { id: 'minimal',   label: 'Minimal' },
-              { id: 'labeled',   label: 'Labeled' },
+              { id: 'clean',     label: 'Clean' },
+              { id: 'detailed',  label: 'Detailed' },
               { id: 'satellite', label: 'Satellite' },
             ].map(({ id, label }) => {
-              const active = (basemap || 'minimal') === id;
+              const active = wbView.canvas === id;
               return (
-                <button key={id} onClick={() => onBasemap(id)} style={{
+                <button key={id} onClick={() => onWbView({ ...wbView, canvas: id })} style={{
                   flex: 1, fontSize: '0.5rem', padding: '3px 0',
                   borderRadius: 4, cursor: 'pointer', fontFamily: 'inherit',
                   letterSpacing: '0.5px', border: `1px solid ${active ? 'rgba(74,143,204,0.6)' : t.panelBorder}`,
@@ -156,19 +156,26 @@ export default function LayerPanel({
               );
             })}
           </div>
-          {basemap === 'satellite' && onSatLabels && (
-            <button onClick={() => onSatLabels(!satLabels)} style={{
-              marginTop: 5, width: '100%', fontSize: '0.5rem', padding: '3px 0',
-              borderRadius: 4, cursor: 'pointer', fontFamily: 'inherit',
-              letterSpacing: '0.5px',
-              border: `1px solid ${satLabels ? 'rgba(74,143,204,0.6)' : t.panelBorder}`,
-              backgroundColor: satLabels ? 'rgba(74,143,204,0.12)' : 'transparent',
-              color: satLabels ? t.lbl : t.lblMuted,
-              transition: 'all 0.15s',
-            }}>
-              {satLabels ? '✓ ' : ''}Labels
-            </button>
-          )}
+          {/* World Bank reference layers, each on its own switch. Boundaries
+              and names are the Bank's (GAD); place names are Esri's. */}
+          {[
+            { key: 'boundaries',   label: 'Boundaries' },
+            { key: 'countryNames', label: 'Country names' },
+            { key: 'admin1',       label: 'Admin 1' },
+            { key: 'capitals',     label: 'Capitals' },
+            { key: 'esriLabels',   label: 'Place names' },
+          ].map(({ key, label }) => (
+            <div key={key} className="layer-row"
+              onClick={() => onWbView({ ...wbView, [key]: !wbView[key] })}
+              style={{ marginTop: key === 'boundaries' ? 6 : 3, opacity: wbView[key] ? 1 : 0.35, cursor: 'pointer' }}>
+              <span style={{
+                display: 'inline-block', width: 5, height: 5, borderRadius: 1,
+                backgroundColor: t.isDark ? 'rgba(200,220,240,0.55)' : 'rgba(40,50,60,0.45)',
+                marginRight: 8, flexShrink: 0,
+              }} />
+              <span style={{ fontSize: '0.62rem', color: t.lblRow }}>{label}</span>
+            </div>
+          ))}
         </div>
       )}
 

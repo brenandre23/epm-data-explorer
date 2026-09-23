@@ -13,6 +13,7 @@ import { featureCentroid } from './centroids';
 import { weightedAvgPrice } from './epmFetch';
 import { layer, source } from './mapSource';
 import { priceDotEl } from './priceDot';
+import { MAP_LABEL_FONT } from './wbStyle';
 
 // All layer ids the toggle controls: the country body, the corridors crossing it, then
 // the node. Not a drawing order — the bodies are slipped under the map's internal
@@ -208,7 +209,7 @@ export function addExtZoneLayers(map, tv, data, { visible = true, mode = 'inputs
   // otherwise which zone it is stays one hover away.
   if (mode !== 'results') {
     map.addLayer({ id: 'ext-ntc-labels', type: 'symbol', source: 'ext-ntc-lines',
-      layout: { visibility: vis, 'text-field': ['concat', ['to-string', ['round', ['get', 'ntc_mw']]], ' MW'],
+      layout: { visibility: vis, 'text-font': MAP_LABEL_FONT, 'text-field': ['concat', ['to-string', ['round', ['get', 'ntc_mw']]], ' MW'],
         'text-size': 8, 'symbol-placement': 'line-center', 'text-allow-overlap': false },
       paint: { 'text-color': NTC_LABEL, 'text-halo-color': 'rgba(255,255,255,0.9)', 'text-halo-width': 1.5 } });
   }

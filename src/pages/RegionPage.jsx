@@ -4,7 +4,7 @@ import maplibregl from 'maplibre-gl';
 import { track } from '../analytics';
 import { useTheme } from '../App';
 import {
-  getT, mapStyle, swapBasemap, toggleSatLabels, FUEL_COLORS, VOLTAGE_BRACKETS,
+  getT, FUEL_COLORS, VOLTAGE_BRACKETS,
   plantRadiusExpr, lcRadiusExpr, fuelColorExpr, PLANT_STATUSES, zoneColorExpr,
 } from '../constants';
 import CapacityChart from '../components/CapacityChart';
@@ -30,7 +30,8 @@ import { zoneCentroidMap } from '../utils/centroids';
 import VariantPicker from '../components/VariantPicker';
 import ScenarioTab from '../components/ScenarioTab';
 import { fetchScenarioDocs, scenarioDocIndex } from '../utils/scenarioDocs';
-import { fetchCountries, fetchBoundaries, addCountriesSource, addBaseLayers, regionFilter, addRegionCoast, raiseBoundaries } from '../utils/basemap';
+import { fetchCountries, fetchBoundaries, addCountriesSource, addBoundariesSource, regionFilter, addRegionCoast, raiseBoundaries } from '../utils/basemap';
+import { buildWbStyle, applyWbView, useWbStyleBase, ZONE_MAP_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source } from '../utils/mapSource';
 import { usePromotedEpmData } from '../utils/usePromotedZones';
 import CJChart from '../components/CJChart';
@@ -1964,6 +1965,9 @@ function AboutTab({ region, t, epmData, epmLoading, activeFolder }) {
 export default function RegionPage() {
   const { regionId } = useParams();
   const { theme }    = useTheme();
+  const wbBase = useWbStyleBase();
+  const [wbView, setWbView] = useState(ZONE_MAP_VIEW);
+  const wbViewRef = useRef(wbView);   // what a rebuilt map (theme change) starts from
   const t            = getT(theme);
   const navigate     = useNavigate();
 
@@ -1995,8 +1999,6 @@ export default function RegionPage() {
   const [activeTab,       setActiveTab]       = useState('overview');
   const [availZone,       setAvailZone]       = useState('all');
   const [resourceSection, setResourceSection] = useState('vre');
-  const [basemap,         setBasemap]         = useState('minimal');
-  const [satLabels,       setSatLabels]       = useState(false);
   const [epmDataRaw,         setEpmData]         = useState(null);
 
   // Zones this region asked to be shown as external, moved across the line before any
@@ -2226,7 +2228,7 @@ export default function RegionPage() {
 
   // ── Map initialisation ────────────────────────────────────────────────────
   useEffect(() => {
-    if (!containerRef.current || !region) return;
+    if (!containerRef.current || !region || !wbBase) return;
     // EPM region: wait for data; skip map if neither linestring nor zones available
     if (region.epm) {
       if (!epmData) return;
@@ -2238,7 +2240,7 @@ export default function RegionPage() {
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: mapStyle(theme),
+      style: buildWbStyle(wbBase, getT(theme), wbViewRef.current),
       center: [0, 20], zoom: 2, minZoom: 1, maxZoom: 14,
       canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl: false,
     });
@@ -2258,7 +2260,7 @@ export default function RegionPage() {
 
       addCountriesSource(map, countries);
       const tv = getT(theme);
-      addBaseLayers(map, tv, boundaries);
+      addBoundariesSource(map, boundaries);
 
       if (isEpm) {
         // ── EPM map: zone polygons + NTC lines + country donut markers ───────
@@ -2403,7 +2405,7 @@ export default function RegionPage() {
                 'line-width': ['interpolate', ['linear'], ['get', 'ntc_mw'], 0, 1, 500, 2, 2000, 3.5, 8000, 6],
                 'line-opacity': 0.88 } });
             map.addLayer({ id: 'ntc-labels', type: 'symbol', source: 'ntc-lines',
-              layout: { 'text-field': ['concat', ['to-string', ['round', ['get', 'ntc_mw']]], ' MW'],
+              layout: { 'text-font': MAP_LABEL_FONT, 'text-field': ['concat', ['to-string', ['round', ['get', 'ntc_mw']]], ' MW'],
                 'text-size': 8, 'symbol-placement': 'line-center', 'text-allow-overlap': false,
                 visibility: lineKindsRef.current.existing ? 'visible' : 'none' },
               paint: { 'text-color': '#b07800',
@@ -2425,7 +2427,7 @@ export default function RegionPage() {
                 'line-dasharray': st.dash, 'line-offset': ['get', 'offset'] } });
             map.addLayer({ id: `newtx-${kind}-labels`, type: 'symbol', source: 'newtx-lines',
               filter: ['==', ['get', 'kind'], kind],
-              layout: { 'text-field': ['get', 'label'], 'text-size': 8, visibility,
+              layout: { 'text-font': MAP_LABEL_FONT, 'text-field': ['get', 'label'], 'text-size': 8, visibility,
                 'symbol-placement': 'line-center', 'text-allow-overlap': false,
                 'text-offset': [0, kind === 'planned' ? -0.9 : 0.9] },
               paint: { 'text-color': st.text,
@@ -2559,7 +2561,7 @@ export default function RegionPage() {
             'circle-stroke-width': 1.2, 'circle-stroke-color': 'rgba(255,255,255,0.65)' } });
         map.addLayer({ id: 'load-centers-labels', type: 'symbol', source: 'load-centers',
           filter: ['>=', ['get', 'pop'], 300_000], layout: { visibility: 'none',
-            'text-field': ['get', 'name'], 'text-size': 9, 'text-offset': [0, 1.3], 'text-anchor': 'top' },
+            'text-font': MAP_LABEL_FONT, 'text-field': ['get', 'name'], 'text-size': 9, 'text-offset': [0, 1.3], 'text-anchor': 'top' },
           paint: { 'text-color': '#1a237e', 'text-halo-color': 'rgba(255,255,255,0.88)', 'text-halo-width': 1.5 } });
 
         let hoveredId = null;
@@ -2591,7 +2593,7 @@ export default function RegionPage() {
       donutMarkersRef.current = [];
       mapRef.current?.remove();
     };
-  }, [region, theme, epmData?.linestringGJ, epmData?.zonesGJ]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [region, theme, epmData?.linestringGJ, epmData?.zonesGJ, wbBase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // External zones toggle. The ref is what the map-load handler reads, so a rebuilt
   // map comes back at the visibility the user left it at.
@@ -2630,17 +2632,9 @@ export default function RegionPage() {
 
   // Basemap switcher
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    swapBasemap(map, basemap, theme);
-    if (basemap !== 'satellite') toggleSatLabels(map, false, theme);
-  }, [basemap, theme]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || basemap !== 'satellite') return;
-    toggleSatLabels(map, satLabels, theme);
-  }, [satLabels, basemap, theme]);
+    wbViewRef.current = wbView;
+    applyWbView(mapRef.current, wbView);
+  }, [wbView]);
 
   // Pie donut markers — re-render on pieMode toggle or after map loads
   useEffect(() => {
@@ -2766,11 +2760,11 @@ export default function RegionPage() {
 
           {/* Basemap controls */}
           <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, display: 'flex', gap: 4, alignItems: 'center' }}>
-            {[{ id: 'minimal', label: 'Map' }, { id: 'labeled', label: 'Labels' }, { id: 'satellite', label: 'Sat' }]
+            {[{ id: 'clean', label: 'Clean' }, { id: 'detailed', label: 'Detailed' }, { id: 'satellite', label: 'Sat' }]
               .map(({ id, label }) => {
-                const active = (basemap || 'minimal') === id;
+                const active = wbView.canvas === id;
                 return (
-                  <button key={id} onClick={() => setBasemap(id)} style={{
+                  <button key={id} onClick={() => setWbView(v => ({ ...v, canvas: id }))} style={{
                     fontSize: '0.52rem', letterSpacing: '0.5px', fontFamily: 'inherit',
                     padding: '4px 8px', borderRadius: 5, cursor: 'pointer',
                     border: `1px solid ${active ? 'rgba(74,143,204,0.6)' : t.panelBorder}`,

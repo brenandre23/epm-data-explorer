@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import maplibregl from 'maplibre-gl';
 import { track } from '../analytics';
 import { useTheme } from '../App';
-import { getT, mapStyle } from '../constants';
+import { getT } from '../constants';
 import {
   fetchEpmCSV, fetchZonesGeoJSON, fetchLinestringGeoJSON, fetchZonesExtGeoJSON, fetchZonesOffgridGeoJSON, fetchGitHubDir, fetchResultCSV, resolveOutputDir, fetchRunList, fetchInputScenarios, fetchDispatchYear,
   processTechFuel, processYearlyZone, processDispatchResults, processHourlyPrice,
@@ -18,7 +18,8 @@ import {
   extNodeCoordMap, buildExtFlowFeatures, updateExtFlows, bindExtFlowHandlers,
 } from '../utils/extZones';
 import { addOffgridLayers } from '../utils/offgridZones';
-import { fetchCountries, fetchBoundaries, addCountriesSource, addBaseLayers, raiseBoundaries } from '../utils/basemap';
+import { fetchCountries, fetchBoundaries, addCountriesSource, addBoundariesSource, raiseBoundaries } from '../utils/basemap';
+import { buildWbStyle, useWbStyleBase, ZONE_MAP_VIEW } from '../utils/wbStyle';
 import { source, markStyleReady, styleReady } from '../utils/mapSource';
 import { zoneCentroidMap } from '../utils/centroids';
 import { usePromotedZones } from '../utils/usePromotedZones';
@@ -44,6 +45,7 @@ export default function ResultsZonePage() {
   const { regionId, zoneId } = useParams();
   const zoneIdDecoded = decodeURIComponent(zoneId);
   const { theme } = useTheme(); const t = getT(theme); const navigate = useNavigate();
+  const wbBase = useWbStyleBase();
 
   const containerRef = useRef(null); const mapRef = useRef(null); const markerRef = useRef(null);
   const hoursDataRef = useRef({});
@@ -163,11 +165,11 @@ export default function ResultsZonePage() {
 
   // Map
   useEffect(()=>{
-    if(!containerRef.current||!region||!zonesGJ)return;
+    if(!containerRef.current||!region||!zonesGJ||!wbBase)return;
     const regionCountries=[...new Set(zcmapRows.map(r=>r.c))].sort();const colorMap={};regionCountries.forEach((c,i)=>{colorMap[c]=MAP_PALETTE[i%MAP_PALETTE.length];});
     const zoneCentroids = zoneCentroidMap(zonesGJ, linestringGJ);
     const center=zoneCentroids[zoneIdDecoded]||[35,39];
-    const map=new maplibregl.Map({container:containerRef.current,style:mapStyle(theme),center,zoom:5,minZoom:1,maxZoom:14,canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl:false});
+    const map=new maplibregl.Map({container:containerRef.current,style:buildWbStyle(wbBase, getT(theme), ZONE_MAP_VIEW),center,zoom:5,minZoom:1,maxZoom:14,canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl:false});
     mapRef.current=map;
     const popup=new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:10,className:`popup-${theme}`});
     const ntcClickPopup=new maplibregl.Popup({closeButton:true,closeOnClick:true,offset:10,className:`popup-${theme}`});
@@ -176,7 +178,7 @@ export default function ResultsZonePage() {
       const countries=await fetchCountries('10m');
       const boundaries=await fetchBoundaries('10m');
       addCountriesSource(map,countries);
-      addBaseLayers(map,tv,boundaries);
+      addBoundariesSource(map,boundaries);
       const isoToC={};for(const f of zonesGJ.features)isoToC[f.properties.ISO_A3]=f.properties.c;
       const uIsos=[...new Set(zonesGJ.features.map(f=>f.properties.ISO_A3))];
       const fillExpr=['match',['get','ISO_A3'],...uIsos.flatMap(iso=>[iso,colorMap[isoToC[iso]]||'#888']),'transparent'];
@@ -202,7 +204,7 @@ export default function ResultsZonePage() {
       raiseBoundaries(map);
     });
     return()=>{popup.remove();markerRef.current?.remove();markerRef.current=null;mapRef.current?.remove();};
-  },[region,theme,zonesGJ,linestringGJ,zcmapRows,zoneIdDecoded]); // eslint-disable-line
+  },[region,theme,zonesGJ,linestringGJ,zcmapRows,zoneIdDecoded,wbBase]); // eslint-disable-line
 
   // External zone layers (added once map + ext data ready)
   useEffect(()=>{

@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import maplibregl from 'maplibre-gl';
 import { track } from '../analytics';
 import { useTheme } from '../App';
-import { getT, mapStyle } from '../constants';
+import { getT } from '../constants';
 import {
   fetchEpmCSV, fetchLinestringGeoJSON, fetchZonesGeoJSON, fetchZonesExtGeoJSON, fetchZonesOffgridGeoJSON, fetchGitHubDir, fetchResultCSV, fetchRunRootCSV, resolveOutputDir, fetchRunList, fetchInputScenarios, fetchDispatchYear, resultCsvUrl,
   processTechFuel, processYearlyZone, processDispatchResults, processHourlyPrice,
@@ -26,7 +26,8 @@ import {
   extNodeCoordMap, buildExtFlowFeatures, bindExtFlowHandlers, addExtPriceDots,
 } from '../utils/extZones';
 import { addOffgridLayers } from '../utils/offgridZones';
-import { fetchCountries, fetchBoundaries, addCountriesSource, addBaseLayers, raiseBoundaries } from '../utils/basemap';
+import { fetchCountries, fetchBoundaries, addCountriesSource, addBoundariesSource, raiseBoundaries } from '../utils/basemap';
+import { buildWbStyle, useWbStyleBase, ZONE_MAP_VIEW } from '../utils/wbStyle';
 import { baseFirst, baseScenario, defaultScenarios } from '../utils/scenarioOrder';
 import { physicalStats } from '../utils/summaryStats';
 import ScenarioPicker, { ScenarioKey } from '../components/ScenarioPicker';
@@ -202,6 +203,7 @@ function OverviewPie({ tfs, data, total, unitDiv, unitLbl, t }) {
 export default function ResultsRegionPage() {
   const { regionId } = useParams();
   const { theme }    = useTheme();
+  const wbBase = useWbStyleBase();
   const t            = getT(theme);
   const navigate     = useNavigate();
 
@@ -535,7 +537,7 @@ export default function ResultsRegionPage() {
 
   // ── Map ────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!containerRef.current || !region || !zonesGJ) return;
+    if (!containerRef.current || !region || !zonesGJ || !wbBase) return;
 
     const zcMap = Object.fromEntries(zcmapRows.map(r=>[r.z, r.c]));
     const regionCountries = [...new Set(zcmapRows.map(r=>r.c))].sort();
@@ -551,7 +553,7 @@ export default function ResultsRegionPage() {
     ntcRef.current.applied = null; extFlowRef.current.applied = null;
 
     const map = new maplibregl.Map({
-      container:containerRef.current, style:mapStyle(theme),
+      container:containerRef.current, style:buildWbStyle(wbBase, getT(theme), ZONE_MAP_VIEW),
       center:[lons.length?lons.reduce((a,b)=>a+b,0)/lons.length:20, lats.length?lats.reduce((a,b)=>a+b,0)/lats.length:0],
       zoom:4, minZoom:1, maxZoom:14, canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl:false,
     });
@@ -584,7 +586,7 @@ export default function ResultsRegionPage() {
       if (!alive(map)) return;
       if (countries) {
         addCountriesSource(map, countries);
-        addBaseLayers(map, tv, boundaries || { type:'FeatureCollection', features:[] });
+        addBoundariesSource(map, boundaries || { type:'FeatureCollection', features:[] });
       }
 
       const isoToCountry = {};
@@ -679,7 +681,7 @@ export default function ResultsRegionPage() {
     });
 
     return () => { popup.remove(); dotMarkersRef.current.forEach(m=>m.remove()); dotMarkersRef.current=[]; pieMarkersRef.current.forEach(m=>m.remove()); pieMarkersRef.current=[]; mapRef.current?.remove(); };
-  }, [region, theme, zonesGJ, zcmapRows]); // eslint-disable-line
+  }, [region, theme, zonesGJ, zcmapRows, wbBase]); // eslint-disable-line
 
   // ── External zone layers (added once map + ext data ready) ──────────────────
   useEffect(() => {

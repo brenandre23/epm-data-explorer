@@ -4,13 +4,14 @@ import maplibregl from 'maplibre-gl';
 import MapDownload from '../components/MapDownload';
 import { ttl } from '../utils/chartTitle';
 import { useTheme } from '../App';
-import { getT, mapStyle, swapBasemap, toggleSatLabels, FUEL_COLORS, VOLTAGE_BRACKETS, plantRadiusExpr, lcRadiusExpr } from '../constants';
+import { getT, FUEL_COLORS, VOLTAGE_BRACKETS, plantRadiusExpr, lcRadiusExpr } from '../constants';
 import LayerPanel from '../components/LayerPanel';
 import CountryOverview from '../components/CountryOverview';
 import REResourcesTab from '../components/tabs/REResourcesTab';
 import LoadTab from '../components/tabs/LoadTab';
 import ZoningTab from '../components/tabs/ZoningTab';
-import { fetchCountries, fetchBoundaries, addCountriesSource, addBaseLayers, raiseBoundaries } from '../utils/basemap';
+import { fetchCountries, fetchBoundaries, addCountriesSource, addBoundariesSource, raiseBoundaries } from '../utils/basemap';
+import { buildWbStyle, applyWbView, useWbStyleBase, DEFAULT_WB_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source, layer } from '../utils/mapSource';
 import { dataPath } from '../utils/paths';
 
@@ -63,6 +64,9 @@ function fitBoundsCountry(iso, countries) {
 export default function CountryPage() {
   const { iso }      = useParams();
   const { theme }    = useTheme();
+  const wbBase = useWbStyleBase();
+  const [wbView, setWbView] = useState(DEFAULT_WB_VIEW);
+  const wbViewRef = useRef(wbView);   // what a rebuilt map (theme change) starts from
   const t            = getT(theme);
 
   const containerRef = useRef(null);
@@ -87,8 +91,6 @@ export default function CountryPage() {
   const [filteredLinesData,  setFilteredLinesData]  = useState(null);
   const [countryCenter,      setCountryCenter]      = useState(null);
   const [activeTab,          setActiveTab]          = useState('overview');
-  const [basemap,            setBasemap]            = useState('minimal');
-  const [satLabels,          setSatLabels]          = useState(false);
   const [loadCentersOn,      setLoadCentersOn]      = useState(true);
   const [lcMinPop,           setLcMinPop]           = useState(300_000);
   const [lcCircleScale,      setLcCircleScale]      = useState(1.0);
@@ -131,12 +133,12 @@ export default function CountryPage() {
   }, [iso]);
 
   useEffect(() => {
-    if (!containerRef.current || !info) return;
+    if (!containerRef.current || !info || !wbBase) return;
     const { region } = info;
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: mapStyle(theme),
+      style: buildWbStyle(wbBase, getT(theme), wbViewRef.current),
       center: [0, 20], zoom: 2,
       minZoom: 1, maxZoom: 16,
       canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl: false,
@@ -220,7 +222,7 @@ export default function CountryPage() {
 
       const tv = getT(theme);
 
-      addBaseLayers(map, tv, boundaries);
+      addBoundariesSource(map, boundaries);
 
       // Transmission lines
       const kvFilters = {
@@ -344,7 +346,7 @@ export default function CountryPage() {
         id: 'zone-labels', type: 'symbol', source: 'zone-fills',
         layout: {
           visibility: 'none',
-          'text-field': ['get', 'zone_name'],
+          'text-font': MAP_LABEL_FONT, 'text-field': ['get', 'zone_name'],
           'text-size': 11,
           'text-anchor': 'center',
           'text-allow-overlap': true,
@@ -374,7 +376,7 @@ export default function CountryPage() {
         filter: ['!', ['in', ['get', 'status'], ['literal', ['planned', 'candidate', 'long_term']]]],
         layout: {
           visibility: 'none',
-          'text-field': ['get', 'label'],
+          'text-font': MAP_LABEL_FONT, 'text-field': ['get', 'label'],
           'text-size': 9,
           'symbol-placement': 'line-center',
           'text-allow-overlap': false,
@@ -420,7 +422,7 @@ export default function CountryPage() {
         id: 'load-centers-labels', type: 'symbol', source: 'load-centers',
         filter: ['>=', ['get', 'pop'], 300_000],
         layout: {
-          'text-field': ['get', 'name'],
+          'text-font': MAP_LABEL_FONT, 'text-field': ['get', 'name'],
           'text-size': 9,
           'text-offset': [0, 1.3],
           'text-anchor': 'top',
@@ -448,21 +450,13 @@ export default function CountryPage() {
     });
 
     return () => { mapReadyRef.current = false; popup.remove(); mapRef.current?.remove(); };
-  }, [info, theme]);
+  }, [info, theme, wbBase]);
 
   // ── Basemap switcher ─────────────────────────────────────────────────────
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    swapBasemap(map, basemap, theme);
-    if (basemap !== 'satellite') toggleSatLabels(map, false, theme);
-  }, [basemap, theme]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || basemap !== 'satellite') return;
-    toggleSatLabels(map, satLabels, theme);
-  }, [satLabels, basemap, theme]);
+    wbViewRef.current = wbView;
+    applyWbView(mapRef.current, wbView);
+  }, [wbView]);
 
   // ── Layer toggle handlers ────────────────────────────────────────────────
 
@@ -779,7 +773,7 @@ export default function CountryPage() {
         minMw={minMw} circleScale={circleScale}
         plantSource={plantSource} gppdAvailable={gppdAvailable}
         presentFuels={presentFuels}
-        basemap={basemap} onBasemap={setBasemap} satLabels={satLabels} onSatLabels={setSatLabels}
+        wbView={wbView} onWbView={setWbView}
         onToggleFuel={toggleFuel} onToggleKv={toggleKv}
         onToggleLines={toggleLines} onTogglePlants={togglePlants}
         onToggleSubs={toggleSubs}

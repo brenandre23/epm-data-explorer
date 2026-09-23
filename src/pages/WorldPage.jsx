@@ -4,12 +4,14 @@ import maplibregl from 'maplibre-gl';
 import MapDownload from '../components/MapDownload';
 import { ttl } from '../utils/chartTitle';
 import { useTheme } from '../App';
-import { getT, mapStyle } from '../constants';
-import { fetchCountries, fetchBoundaries, addCountriesSource, addBaseLayers, regionFilter, addRegionCoast, raiseBoundaries } from '../utils/basemap';
+import { getT } from '../constants';
+import { fetchCountries, fetchBoundaries, addCountriesSource, addBoundariesSource, regionFilter, addRegionCoast, raiseBoundaries } from '../utils/basemap';
+import { buildWbStyle, useWbStyleBase, DEFAULT_WB_VIEW } from '../utils/wbStyle';
 import { dataPath } from '../utils/paths';
 
 export default function WorldPage() {
   const { theme } = useTheme();
+  const wbBase = useWbStyleBase();
   const t = getT(theme);
   const navigate = useNavigate();
   const containerRef = useRef(null);
@@ -22,7 +24,7 @@ export default function WorldPage() {
   }, []);
 
   useEffect(() => {
-    if (!containerRef.current || !regions) return;
+    if (!containerRef.current || !regions || !wbBase) return;
 
     // Clickable = regions with EPM data; others are shown dimly but not interactive
     const isoToRegions = {};
@@ -51,7 +53,7 @@ export default function WorldPage() {
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: mapStyle(theme),
+      style: buildWbStyle(wbBase, getT(theme), DEFAULT_WB_VIEW),
       center: [20, 15],
       zoom: 2.2,
       minZoom: 1.5,
@@ -68,7 +70,7 @@ export default function WorldPage() {
       const boundaries = await fetchBoundaries('110m');
 
       addCountriesSource(map, countries);
-      addBaseLayers(map, t, boundaries);
+      addBoundariesSource(map, boundaries);
 
       // Non-EPM regions: no highlight, blend into background
 
@@ -167,7 +169,7 @@ export default function WorldPage() {
     });
 
     return () => { mapRef.current?.remove(); setDisambig(null); };
-  }, [regions, theme]);
+  }, [regions, theme, wbBase]);
 
   return (
     <div style={{ height: 'calc(100vh - 46px)', position: 'relative', backgroundColor: t.bg }}>
