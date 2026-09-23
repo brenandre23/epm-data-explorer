@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../App';
 import { getT } from '../constants';
+import { CONTACT_EMAIL, openMail } from '../utils/mailto';
 
-const FORMSPREE_ID = 'xnjygblb';
-const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKtNsfk0dX5SET9ajr4jZ0YK058f94jyjzTpiUFQZZkp9jTh6p_TtPiI6Gv6UeLhTx/exec';
 
 function ExternalLink({ href, children }) {
   return (
@@ -49,50 +48,23 @@ export default function ContactPage() {
   const t = getT(theme);
   const [msg, setMsg] = useState('');
   const [status, setStatus] = useState('idle');
-  const [req, setReq] = useState({ firstName: '', lastName: '', email: '', request: '' });
+  const [req, setReq] = useState('');
   const [reqStatus, setReqStatus] = useState('idle');
 
   const divider = { borderColor: t.panelBorder, margin: '28px 0' };
 
-  async function handleRequestSubmit(e) {
+  function handleRequestSubmit(e) {
     e.preventDefault();
-    if (!req.request.trim() || !req.email.trim()) return;
-    setReqStatus('sending');
-    try {
-      await fetch(GOOGLE_APPS_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        body: new URLSearchParams({
-          name: `${req.firstName} ${req.lastName}`.trim(),
-          firstName: req.firstName,
-          lastName: req.lastName,
-          email: req.email,
-          request: req.request,
-          source: 'EPM Data Explorer',
-        }),
-      });
-      setReqStatus('sent');
-      setReq({ firstName: '', lastName: '', email: '', request: '' });
-    } catch {
-      setReqStatus('error');
-    }
+    if (!req.trim()) return;
+    openMail('EPM Data Explorer: request', req);
+    setReqStatus('sent');
   }
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
     if (!msg.trim()) return;
-    setStatus('sending');
-    try {
-      const res = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ message: msg }),
-      });
-      setStatus(res.ok ? 'sent' : 'error');
-      if (res.ok) setMsg('');
-    } catch {
-      setStatus('error');
-    }
+    openMail('EPM Data Explorer: feedback', msg);
+    setStatus('sent');
   }
 
   return (
@@ -192,7 +164,7 @@ export default function ContactPage() {
             Want something added?
           </div>
           <p style={{ fontSize: '0.66rem', color: t.muted, lineHeight: 1.6, marginBottom: 12 }}>
-            Missing a region, scenario, or feature? Send a request — it goes straight to our tracker.
+            Missing a region, scenario, or feature? Write it here and send it from your email app.
           </p>
 
           {reqStatus === 'sent' ? (
@@ -201,45 +173,14 @@ export default function ContactPage() {
               backgroundColor: 'rgba(64,192,87,0.08)', border: '1px solid rgba(64,192,87,0.25)',
               fontSize: '0.7rem', color: t.muted,
             }}>
-              Request received — thanks! We'll follow up if needed.
+              Your email app should now be open with the request ready to send. If it isn't,
+              write to {CONTACT_EMAIL}.
             </div>
           ) : (
             <form onSubmit={handleRequestSubmit}>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                <input
-                  type="text" value={req.firstName} required
-                  onChange={e => { setReq({ ...req, firstName: e.target.value }); if (reqStatus !== 'idle') setReqStatus('idle'); }}
-                  placeholder="First name"
-                  style={{
-                    flex: '1 1 120px', minWidth: 0, boxSizing: 'border-box', padding: '8px 10px',
-                    borderRadius: 6, border: `1px solid ${t.panelBorder}`, backgroundColor: t.panel,
-                    color: t.text, fontSize: '0.7rem', outline: 'none', fontFamily: 'inherit',
-                  }}
-                />
-                <input
-                  type="text" value={req.lastName} required
-                  onChange={e => { setReq({ ...req, lastName: e.target.value }); if (reqStatus !== 'idle') setReqStatus('idle'); }}
-                  placeholder="Last name"
-                  style={{
-                    flex: '1 1 120px', minWidth: 0, boxSizing: 'border-box', padding: '8px 10px',
-                    borderRadius: 6, border: `1px solid ${t.panelBorder}`, backgroundColor: t.panel,
-                    color: t.text, fontSize: '0.7rem', outline: 'none', fontFamily: 'inherit',
-                  }}
-                />
-                <input
-                  type="email" value={req.email} required
-                  onChange={e => { setReq({ ...req, email: e.target.value }); if (reqStatus !== 'idle') setReqStatus('idle'); }}
-                  placeholder="Your email"
-                  style={{
-                    flex: '1 1 100%', minWidth: 0, boxSizing: 'border-box', padding: '8px 10px',
-                    borderRadius: 6, border: `1px solid ${t.panelBorder}`, backgroundColor: t.panel,
-                    color: t.text, fontSize: '0.7rem', outline: 'none', fontFamily: 'inherit',
-                  }}
-                />
-              </div>
               <textarea
-                value={req.request} required rows={3}
-                onChange={e => { setReq({ ...req, request: e.target.value }); if (reqStatus !== 'idle') setReqStatus('idle'); }}
+                value={req} required rows={3}
+                onChange={e => setReq(e.target.value)}
                 placeholder="What would you like added or changed? (region, scenario, feature…)"
                 style={{
                   width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 6,
@@ -250,24 +191,18 @@ export default function ContactPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
                 <button
                   type="submit"
-                  disabled={reqStatus === 'sending' || !req.request.trim() || !req.email.trim()}
+                  disabled={!req.trim()}
                   style={{
                     padding: '7px 18px', borderRadius: 5, border: '1px solid rgba(74,143,204,0.4)',
                     backgroundColor: 'rgba(74,143,204,0.14)',
-                    color: reqStatus === 'sending' || !req.request.trim() || !req.email.trim() ? t.muted : 'rgba(74,143,204,0.95)',
+                    color: !req.trim() ? t.muted : 'rgba(74,143,204,0.95)',
                     fontSize: '0.65rem', fontWeight: 700,
-                    cursor: reqStatus === 'sending' || !req.request.trim() || !req.email.trim() ? 'default' : 'pointer',
+                    cursor: !req.trim() ? 'default' : 'pointer',
                   }}
                 >
-                  {reqStatus === 'sending' ? 'Sending…' : 'Send request'}
+                  Send request
                 </button>
-                {reqStatus === 'error' && (
-                  <span style={{ fontSize: '0.6rem', color: 'rgba(250,82,82,0.85)' }}>Something went wrong — try again.</span>
-                )}
               </div>
-              <p style={{ fontSize: '0.55rem', color: t.lblMuted, marginTop: 8, lineHeight: 1.5 }}>
-                Your email is used only to follow up on this request.
-              </p>
             </form>
           )}
         </div>
@@ -284,52 +219,51 @@ export default function ContactPage() {
               border: '1px solid rgba(64,192,87,0.25)',
               fontSize: '0.7rem', color: t.muted,
             }}>
-              Message sent — thanks!
+              Your email app should now be open with the message ready to send. If it isn't,
+              write to {CONTACT_EMAIL}.
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
               <textarea
                 value={msg}
-                onChange={e => { setMsg(e.target.value); if (status === 'error') setStatus('idle'); }}
+                onChange={e => setMsg(e.target.value)}
                 placeholder="Your message…"
                 rows={4}
                 style={{
                   width: '100%', boxSizing: 'border-box',
                   padding: '10px 12px', borderRadius: 6,
-                  border: `1px solid ${status === 'error' ? 'rgba(250,82,82,0.5)' : t.panelBorder}`,
+                  border: `1px solid ${t.panelBorder}`,
                   backgroundColor: t.panel, color: t.text,
                   fontSize: '0.72rem', lineHeight: 1.6,
                   resize: 'vertical', outline: 'none',
                   fontFamily: 'inherit',
                 }}
                 onFocus={e => e.target.style.borderColor = 'rgba(74,143,204,0.5)'}
-                onBlur={e => e.target.style.borderColor = status === 'error' ? 'rgba(250,82,82,0.5)' : t.panelBorder}
+                onBlur={e => e.target.style.borderColor = t.panelBorder}
               />
               <div style={{ fontSize: '0.58rem', color: t.lblMuted, marginTop: 6 }}>
-                {status === 'error'
-                  ? <span style={{ color: 'rgba(250,82,82,0.8)' }}>Something went wrong — try again or </span>
-                  : 'Or '}
-                <a href="mailto:mbaronnet@worldbank.org"
+                Or write directly:{' '}
+                <a href={`mailto:${CONTACT_EMAIL}`}
                   style={{ color: 'rgba(74,143,204,0.7)', textDecoration: 'none' }}
                   onMouseOver={e => e.currentTarget.style.textDecoration = 'underline'}
                   onMouseOut={e => e.currentTarget.style.textDecoration = 'none'}
                 >
-                  mbaronnet@worldbank.org
+                  {CONTACT_EMAIL}
                 </a>
               </div>
               <button
                 type="submit"
-                disabled={status === 'sending' || !msg.trim()}
+                disabled={!msg.trim()}
                 style={{
                   marginTop: 10, padding: '7px 18px', borderRadius: 5,
                   border: '1px solid rgba(74,143,204,0.35)',
                   backgroundColor: 'rgba(74,143,204,0.12)',
-                  color: status === 'sending' || !msg.trim() ? t.muted : 'rgba(74,143,204,0.9)',
-                  fontSize: '0.65rem', fontWeight: 600, cursor: status === 'sending' || !msg.trim() ? 'default' : 'pointer',
+                  color: !msg.trim() ? t.muted : 'rgba(74,143,204,0.9)',
+                  fontSize: '0.65rem', fontWeight: 600, cursor: !msg.trim() ? 'default' : 'pointer',
                   transition: 'opacity 0.15s',
                 }}
               >
-                {status === 'sending' ? 'Sending…' : 'Send'}
+                Send
               </button>
             </form>
           )}

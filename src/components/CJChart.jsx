@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import Chart from 'chart.js/auto';
+
+// Bundled rather than loaded from a CDN, so nothing is fetched from outside the site.
 
 /** First ancestor that actually paints a background, so an exported PNG is not transparent. */
 function resolveBg(el) {
@@ -57,7 +60,7 @@ const slug = s => (s || '').normalize('NFKD').replace(/[^\w\s-]/g, '').trim()
   .replace(/\s+/g, '-').slice(0, 60).toLowerCase() || 'epm-chart';
 
 /**
- * Chart.js, loaded from the CDN as `window.Chart`, wrapped so a page can render one from
+ * Chart.js, wrapped so a page can render one from
  * plain data. Every results and input page drew its own copy of this before; they had
  * drifted into four variants, so this is their union — `plugins` and `cacheKey` from the
  * results pages, `onClickYear` from the input pages, and a signature that watches every
@@ -77,14 +80,13 @@ export default function CJChart({ type, data, options, height, plugins: extraPlu
     ds: data.datasets?.map(d => ({ l: d.label, n: d.data?.length, t: d.type, f: d.fill, h: d.hidden })) });
 
   useEffect(() => {
-    const CJ = window.Chart;
-    if (!CJ || !canvasRef.current) return;
+    if (!canvasRef.current) return;
     chartRef.current?.destroy();
     const mergedOptions = onClickYear ? { ...options,
       onClick: (e, _els, chart) => { const pts = chart.getElementsAtEventForMode(e, 'index', { intersect: false }, true); if (pts.length) onClickYear(String(data.labels[pts[0].index])); },
       onHover: (_e, els) => { if (canvasRef.current) canvasRef.current.style.cursor = els.length ? 'pointer' : 'default'; },
     } : options;
-    chartRef.current = new CJ(canvasRef.current, { type, data, options: mergedOptions, plugins: extraPlugins || [] });
+    chartRef.current = new Chart(canvasRef.current, { type, data, options: mergedOptions, plugins: extraPlugins || [] });
     return () => { chartRef.current?.destroy(); chartRef.current = null; };
   }, [sig]); // eslint-disable-line react-hooks/exhaustive-deps
 

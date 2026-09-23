@@ -72,7 +72,8 @@ export default function App() {
               </Routes>
             </div>
           </div>
-          <Analytics />
+          {/* Vercel's insights endpoint only exists on Vercel, which serves from the root. */}
+          {import.meta.env.BASE_URL === '/' && <Analytics />}
         </HashRouter>
       </ThemeCtx.Provider>
     </ErrorBoundary>
