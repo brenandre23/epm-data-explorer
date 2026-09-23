@@ -136,7 +136,7 @@ function overlay({ ax, seasons, days, grouped, isDark, hoursData, totalDays, lin
       for (const q of seasons) {
         const width = days.reduce((a, d) => a + spn(q, d), 0);
         ctx.save();
-        ctx.font = '700 9px system-ui,sans-serif'; ctx.fillStyle = titleC;
+        ctx.font = '700 9px "Open Sans", system-ui, sans-serif'; ctx.fillStyle = titleC;
         ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
         ctx.fillText(q, xS.getPixelForValue(off(q, days[0]) + width / 2), top - 2);
         ctx.restore();
@@ -155,7 +155,7 @@ function overlay({ ax, seasons, days, grouped, isDark, hoursData, totalDays, lin
           ctx.save();
           ctx.translate(xS.getPixelForValue(start + spn(q, d) / 2), bottom + 3);
           ctx.rotate(-Math.PI / 2);
-          ctx.font = '8px system-ui,sans-serif'; ctx.fillStyle = textC;
+          ctx.font = '8px "Open Sans", system-ui, sans-serif'; ctx.fillStyle = textC;
           ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
           ctx.fillText(`${d}${pct}`, 0, 0);
           ctx.restore();

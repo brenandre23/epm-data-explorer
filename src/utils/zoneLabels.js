@@ -39,7 +39,7 @@ export function useZoneLabels() {
 /** The element one name is drawn with. `tv` is the theme (constants.getT). */
 export function zoneLabelEl(text, tv) {
   const el = document.createElement('div');
-  el.style.cssText = `font-size:0.45rem;font-weight:600;font-family:system-ui,sans-serif;color:${tv.muted};`
+  el.style.cssText = `font-size:0.45rem;font-weight:600;font-family:"Open Sans", system-ui, sans-serif;color:${tv.muted};`
     + `white-space:nowrap;pointer-events:none;`
     + `text-shadow:0 0 2px ${tv.bg},0 0 2px ${tv.bg},0 0 3px ${tv.bg};`;
   el.textContent = text;

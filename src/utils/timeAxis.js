@@ -112,7 +112,7 @@ export function bandingPlugin({ id, ax, seasons, daytypes, hoursData, totalDays,
         const start = off(si, 0);
         const width = daytypes.reduce((a, _, di) => a + spn(si, di), 0);
         ctx.save();
-        ctx.font = '700 9px system-ui,sans-serif';
+        ctx.font = '700 9px "Open Sans", system-ui, sans-serif';
         ctx.fillStyle = seasC; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
         ctx.fillText(seasons[si], xS.getPixelForValue(start + width / 2), top - 2);
         ctx.restore();
@@ -135,7 +135,7 @@ export function bandingPlugin({ id, ax, seasons, daytypes, hoursData, totalDays,
           ctx.save();
           ctx.translate(xS.getPixelForValue(dts + spn(si, di) / 2), bottom + 3);
           ctx.rotate(-Math.PI / 2);
-          ctx.font = `${dayFont}px system-ui,sans-serif`;
+          ctx.font = `${dayFont}px "Open Sans", system-ui, sans-serif`;
           ctx.fillStyle = textC; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
           ctx.fillText(`${daytypes[di]}${pct}`, 0, 0);
           ctx.restore();

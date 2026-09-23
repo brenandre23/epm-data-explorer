@@ -410,7 +410,7 @@ export default function EpmZonePage() {
 
       if (zoneCentroids[zoneIdDecoded]) {
         const el = document.createElement('div');
-        el.style.cssText = `font-size:0.55rem;font-weight:700;font-family:system-ui,sans-serif;color:${tv.lbl};background:${tv.panel};border:1.5px solid ${tv.panelBorder};border-radius:4px;padding:2px 7px;white-space:nowrap;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.22);`;
+        el.style.cssText = `font-size:0.55rem;font-weight:700;font-family:"Open Sans", system-ui, sans-serif;color:${tv.lbl};background:${tv.panel};border:1.5px solid ${tv.panelBorder};border-radius:4px;padding:2px 7px;white-space:nowrap;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.22);`;
         el.textContent = zoneIdDecoded;
         markerRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -4] })
           .setLngLat(zoneCentroids[zoneIdDecoded]).addTo(map);
@@ -443,7 +443,7 @@ export default function EpmZonePage() {
     if (center) {
       const tv = getT(theme);
       const el = document.createElement('div');
-      el.style.cssText = `font-size:0.55rem;font-weight:700;font-family:system-ui,sans-serif;color:${tv.lbl};background:${tv.panel};border:1.5px solid ${tv.panelBorder};border-radius:4px;padding:2px 7px;white-space:nowrap;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.22);`;
+      el.style.cssText = `font-size:0.55rem;font-weight:700;font-family:"Open Sans", system-ui, sans-serif;color:${tv.lbl};background:${tv.panel};border:1.5px solid ${tv.panelBorder};border-radius:4px;padding:2px 7px;white-space:nowrap;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.22);`;
       el.textContent = zoneIdDecoded;
       markerRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -4] })
         .setLngLat(center).addTo(map);

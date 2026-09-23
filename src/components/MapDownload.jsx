@@ -28,7 +28,7 @@ async function overlayImage(container, w, h) {
   const holder = document.createElement('div');
   holder.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
   holder.setAttribute('style',
-    `width:${w}px;height:${h}px;position:relative;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif`);
+    `width:${w}px;height:${h}px;position:relative;overflow:hidden;font-family:"Open Sans", system-ui, sans-serif`);
   for (const n of nodes) {
     const c = n.cloneNode(true);
     c.style.position = 'absolute';
@@ -66,7 +66,7 @@ export async function exportMapPng(map, name) {
   ctx.fillRect(0, 0, out.width, out.height);
   if (title) {
     ctx.fillStyle = getComputedStyle(map.getContainer()).color || '#333';
-    ctx.font = `600 ${Math.round(13 * ratio)}px 'Segoe UI', system-ui, sans-serif`;
+    ctx.font = `600 ${Math.round(13 * ratio)}px "Open Sans", system-ui, sans-serif`;
     ctx.textBaseline = 'middle';
     let txt = title;
     const room = out.width - 2 * pad;

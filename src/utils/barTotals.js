@@ -128,7 +128,7 @@ export function visibleStackTotal(chart, dataIndex) {
 export function barTotalPlugin({ axis = 'x', color = '#888', fmt = DEFAULT_FMT, unit = '', size, pad = 4,
   delta = false, headroom } = {}) {
   const px = size ?? (axis === 'x' ? 10 : 9);
-  const font = `500 ${px}px system-ui, -apple-system, sans-serif`;
+  const font = `500 ${px}px "Open Sans", system-ui, sans-serif`;
   const stretch = headroom ?? axis === 'y';
   const indexAxis = axis === 'x' ? 'y' : 'x';
   const sign = v => (delta && v > 0 ? '+' : '');

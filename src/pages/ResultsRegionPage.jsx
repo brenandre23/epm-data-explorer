@@ -78,7 +78,7 @@ const MAIN_COST_CATS = ['Fuel costs: $m','Fixed O&M: $m','Variable O&M: $m','Inv
   'Import costs with external zones: $m','Export revenues with external zones: $m',
   'Spinning reserve costs: $m','Unmet country spinning reserve costs: $m'];
 function costColor(cat) { return COST_COLORS[cat] || '#888888'; }
-function makeScenPlugin(activeSc,color){if(!activeSc||activeSc.length<2)return null;return{id:'scenLabels',afterDraw(chart){const{ctx,chartArea:ca}=chart;if(!ca)return;ctx.save();ctx.font='8px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillStyle=color||'rgba(128,128,128,0.7)';activeSc.forEach((scen,si)=>{const dsIdx=chart.data.datasets.findIndex(d=>d.stack===scen);if(dsIdx<0)return;const meta=chart.getDatasetMeta(dsIdx);const nX=chart.data.labels.length;for(let xi=0;xi<nX;xi++){const bar=meta.data[xi];if(!bar)continue;ctx.fillText(`S${si+1}`,bar.x,ca.bottom+12);}});ctx.restore();}};}
+function makeScenPlugin(activeSc,color){if(!activeSc||activeSc.length<2)return null;return{id:'scenLabels',afterDraw(chart){const{ctx,chartArea:ca}=chart;if(!ca)return;ctx.save();ctx.font='8px "Open Sans", system-ui, sans-serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillStyle=color||'rgba(128,128,128,0.7)';activeSc.forEach((scen,si)=>{const dsIdx=chart.data.datasets.findIndex(d=>d.stack===scen);if(dsIdx<0)return;const meta=chart.getDatasetMeta(dsIdx);const nX=chart.data.labels.length;for(let xi=0;xi<nX;xi++){const bar=meta.data[xi];if(!bar)continue;ctx.fillText(`S${si+1}`,bar.x,ca.bottom+12);}});ctx.restore();}};}
 
 // The country selector's third regime: draw the countries side by side instead of
 // summing them. Only the yearlyZone indicators can take it, they are the ones drawn as
@@ -189,10 +189,10 @@ function OverviewPie({ tfs, data, total, unitDiv, unitLbl, t }) {
     ctx.fillStyle = t.isDark ? 'rgba(15,20,30,0.88)' : 'rgba(245,248,252,0.92)'; ctx.fill();
     const v = (total/unitDiv); const vs = v>=10 ? v.toFixed(0) : v.toFixed(1);
     ctx.fillStyle = t.isDark ? 'rgba(255,255,255,0.95)' : 'rgba(15,30,60,0.9)';
-    ctx.font = 'bold 10px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 10px "Open Sans", system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(vs, cx, cy-4);
     ctx.fillStyle = t.isDark ? 'rgba(255,255,255,0.5)' : 'rgba(60,80,120,0.6)';
-    ctx.font = '7.5px system-ui,sans-serif'; ctx.fillText(unitLbl, cx, cy+7);
+    ctx.font = '7.5px "Open Sans", system-ui, sans-serif'; ctx.fillText(unitLbl, cx, cy+7);
   }, [tfs, data, total, unitDiv, unitLbl, t]); // eslint-disable-line
   return <canvas ref={ref} style={{ display:'block', flexShrink:0 }} />;
 }
@@ -822,9 +822,9 @@ export default function ResultsRegionPage() {
       const mutedC=lightBg?'rgba(60,80,120,0.65)':'rgba(255,255,255,0.55)';
       ctx.beginPath();ctx.arc(cx,cy,iR-0.5,0,2*Math.PI);ctx.fillStyle=centerBg;ctx.fill();
       const val=total/unitDiv; const valStr=val>=10?val.toFixed(0):val.toFixed(1);
-      ctx.fillStyle=textC; ctx.font='bold 8px system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle=textC; ctx.font='bold 8px "Open Sans", system-ui, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(valStr,cx,cy-2.5);
-      ctx.fillStyle=mutedC; ctx.font='6px system-ui,sans-serif'; ctx.fillText(unitLbl,cx,cy+6);
+      ctx.fillStyle=mutedC; ctx.font='6px "Open Sans", system-ui, sans-serif'; ctx.fillText(unitLbl,cx,cy+6);
       canvas.title=`${z}: ${(total/unitDiv).toFixed(1)} ${unitLbl}`;
       pieMarkersRef.current.push(new maplibregl.Marker({element:canvas,anchor:'center'}).setLngLat(coord).addTo(map));
     }

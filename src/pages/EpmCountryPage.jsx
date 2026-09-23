@@ -107,8 +107,8 @@ function makeDonutSVG(fuelMix, tv, size = 48) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
     <circle cx="${cx}" cy="${cy}" r="${r + sw/2 + 1}" fill="${bg}" stroke="rgba(0,0,0,0.18)" stroke-width="0.5"/>
     ${arcs.join('')}
-    <text x="${cx}" y="${cy - 1}" text-anchor="middle" font-size="8" font-weight="700" fill="${tc}" font-family="system-ui,sans-serif">${label}</text>
-    <text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="6.5" fill="${tc}" font-family="system-ui,sans-serif" opacity="0.65">${unit}</text>
+    <text x="${cx}" y="${cy - 1}" text-anchor="middle" font-size="8" font-weight="700" fill="${tc}" font-family="'Open Sans', system-ui, sans-serif">${label}</text>
+    <text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="6.5" fill="${tc}" font-family="'Open Sans', system-ui, sans-serif" opacity="0.65">${unit}</text>
   </svg>`;
 }
 

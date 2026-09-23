@@ -30,6 +30,8 @@ function iisConfig() {
       <mimeMap fileExtension=".geojson" mimeType="application/geo+json" />
       <remove fileExtension=".json" />
       <mimeMap fileExtension=".json" mimeType="application/json" />
+      <remove fileExtension=".woff2" />
+      <mimeMap fileExtension=".woff2" mimeType="font/woff2" />
     </staticContent>
   </system.webServer>
 </configuration>

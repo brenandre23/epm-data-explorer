@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Chart from 'chart.js/auto';
 
 // Bundled rather than loaded from a CDN, so nothing is fetched from outside the site.
+Chart.defaults.font.family = "'Open Sans', system-ui, sans-serif";
 
 /** First ancestor that actually paints a background, so an exported PNG is not transparent. */
 function resolveBg(el) {
@@ -109,7 +110,7 @@ export default function CJChart({ type, data, options, height, plugins: extraPlu
 
     if (title) {
       ctx.fillStyle = getComputedStyle(src).color || '#333';
-      ctx.font = `600 ${Math.round(13 * ratio)}px 'Segoe UI', system-ui, sans-serif`;
+      ctx.font = `600 ${Math.round(13 * ratio)}px "Open Sans", system-ui, sans-serif`;
       ctx.textBaseline = 'middle';
       let txt = title;
       const room = out.width - 2 * pad;

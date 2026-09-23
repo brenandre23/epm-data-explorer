@@ -138,7 +138,7 @@ export default function Navbar() {
           fontSize: '0.7rem', fontWeight: 700, letterSpacing: '2px',
           color: t.muted, textTransform: 'uppercase',
           display: 'flex', alignItems: 'center', gap: 8,
-          fontFamily: "'Segoe UI', system-ui, sans-serif",
+          fontFamily: "'Open Sans', system-ui, sans-serif",
         }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
