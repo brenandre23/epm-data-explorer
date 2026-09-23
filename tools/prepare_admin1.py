@@ -6,9 +6,9 @@ Source: WB-GAD Medium Resolution, layer 4 (WB_GAD_ADM1)
 
 This replaces the Natural Earth admin-1 extraction previously shipped in
 public/data/cache. It was the last boundary layer in the app that did not come
-from the Bank -- every other one is built by prepare_boundaries.py from the WB
-Official Boundaries dataset. The two now agree by construction, which is what
-map clearance asks for.
+from the Bank -- the country geometry is built by prepare_gad.py from the same
+WB-GAD product. The two now agree by construction, which is what map clearance
+asks for.
 
 The Bank's level 1 is not Natural Earth's: WB gives Bosnia its two entities
 rather than cantons, Azerbaijan its economic regions rather than rayons, and it
@@ -18,7 +18,7 @@ Outputs (public/data/cache/):
     region_admin1_<region>.geojson   -- one file per region that had one
 
 Feature properties:
-    ISO_A3     the app's country key, the one countries_*.geojson joins on
+    ISO_A3     the app's country key, the one public/data/geo joins on
     name       the division's name (WB-GAD nam_1)
     wb_status  the Bank's status for the division, e.g. "Member State"
 
@@ -37,7 +37,7 @@ from urllib.parse import urlencode
 import geopandas as gpd
 import topojson as tp
 
-from prepare_boundaries import polygons_only, round_coords
+from geometry import polygons_only, round_coords
 
 ADM1_URL = ("https://geowb.worldbank.org/hosting/rest/services/Hosted/"
             "WB_GAD_Medium_Resolution/FeatureServer/4/query")

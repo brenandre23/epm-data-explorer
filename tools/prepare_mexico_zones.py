@@ -22,8 +22,8 @@ Outputs (into an EPM input folder, default epm/input/data_mexico_ccdr):
                         and the shape src/pages/RegionPage.jsx reads
     zones_ext.geojson   one feature per external zone in trade/zext.csv
 
-Guatemala is a country, so it keeps its own boundary from the app's cleared
-countries_10m.geojson and draws as a grey neighbour. CAISO, ERCOT and WEPP are
+Guatemala is a country, so it keeps its own boundary from the app's WB-GAD
+country file (public/data/geo, see prepare_gad.py) and draws as a grey neighbour. CAISO, ERCOT and WEPP are
 US market areas with no boundary in any Bank layer; they are written as points
 placed on the interconnection, which is all the map draws them as anyway. A
 made-up polygon would read as an official footprint, so there is none.
@@ -43,7 +43,7 @@ from urllib.parse import urlencode
 import geopandas as gpd
 import topojson as tp
 
-from prepare_boundaries import polygons_only, round_coords
+from geometry import polygons_only, round_coords
 
 ADM1_URL = ("https://geowb.worldbank.org/hosting/rest/services/Hosted/"
             "WB_GAD_Medium_Resolution/FeatureServer/4/query")
@@ -56,7 +56,7 @@ COUNTRY = "MEXICO"   # the c column of zcmap.csv, which zones.geojson must match
 ISO = "MEX"
 
 _ROOT = Path(__file__).resolve().parent.parent
-COUNTRIES = _ROOT / "public" / "data" / "countries_10m.geojson"
+GEO_COUNTRY = _ROOT / "public" / "data" / "geo" / "country"
 DEFAULT_OUT = _ROOT.parent / "EPM" / "epm" / "input" / "data_mexico_ccdr"
 
 # CENACE control region -> the states it covers, keyed on fold() of WB-GAD nam_1.
@@ -139,12 +139,14 @@ def dissolve(gdf):
 
 
 def guatemala():
-    """Guatemala's boundary from the app's cleared country layer."""
-    doc = json.loads(COUNTRIES.read_text(encoding="utf-8"))
+    """Guatemala's boundary from the app's WB-GAD country file."""
+    iso = EXT_COUNTRY["GUA"]
+    path = GEO_COUNTRY / f"{iso}.geojson"
+    doc = json.loads(path.read_text(encoding="utf-8"))
     for f in doc["features"]:
-        if f["properties"].get("ISO_A3") == EXT_COUNTRY["GUA"]:
+        if f["properties"].get("ISO_A3") == iso:
             return f["geometry"]
-    raise SystemExit(f"{EXT_COUNTRY['GUA']} not in {COUNTRIES.name}")
+    raise SystemExit(f"{iso} not in {path.name} -- run tools/prepare_gad.py")
 
 
 def write_zones(gdf, path):
@@ -176,7 +178,7 @@ def write_zones_ext(path):
             "geometry": {"type": "Point", "coordinates": coords},
         })
     doc = {"type": "FeatureCollection", "name": "zones_ext",
-           "source": "World Bank Official Boundaries (GUA); interconnection points",
+           "source": "World Bank Global Administrative Divisions (GUA); interconnection points",
            "license": SOURCE_LICENSE, "features": features}
     path.write_text(json.dumps(doc), encoding="utf-8")
     print(f"  {path.name}: {len(features)} external zones, "
