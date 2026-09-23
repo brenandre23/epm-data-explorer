@@ -16,9 +16,10 @@
  * disagree by a pixel. See tools/prepare_boundaries.py.
  */
 
-/** Country features only: everything the Bank attributes to a country. */
 import { layer } from './mapSource';
+import { dataPath } from './paths';
 
+/** Country features only: everything the Bank attributes to a country. */
 export const COUNTRY_ONLY = ['!=', ['get', 'STATUS'], 'non-determined'];
 /** The unattributed areas. */
 export const NON_DETERMINED_ONLY = ['==', ['get', 'STATUS'], 'non-determined'];
@@ -77,7 +78,7 @@ async function atBestResolution(resolution, load) {
  * @param {'10m'|'110m'} resolution
  */
 export async function fetchCountries(resolution = '10m') {
-  const fc = await atBestResolution(resolution, r => fetchJson(`/data/countries_${r}.geojson`));
+  const fc = await atBestResolution(resolution, r => fetchJson(dataPath(`countries_${r}.geojson`)));
   fc.features.forEach((f, i) => { f.id = i; });
   return fc;
 }
@@ -96,7 +97,7 @@ export function addCountriesSource(map, countries) {
  * @param {'10m'|'110m'} resolution
  */
 export async function fetchBoundaries(resolution = '10m') {
-  return atBestResolution(resolution, r => fetchJson(`/data/boundaries_${r}.geojson`));
+  return atBestResolution(resolution, r => fetchJson(dataPath(`boundaries_${r}.geojson`)));
 }
 
 /**

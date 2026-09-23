@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, Component } from 'react';
 import { THEME_LIST } from './constants';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import Navbar from './components/Navbar';
 import WorldPage from './pages/WorldPage';
@@ -39,7 +39,9 @@ class ErrorBoundary extends Component {
 
 export default function App() {
   const [theme, setTheme] = useState(() => {
-    const p = new URLSearchParams(window.location.search).get('theme');
+    // ?theme= may sit before the hash (…/?theme=x#/region/y) or inside it (…/#/region/y?theme=x).
+    const p = new URLSearchParams(window.location.search).get('theme')
+      ?? new URLSearchParams(window.location.hash.split('?')[1] || '').get('theme');
     return (p && THEME_LIST.includes(p)) ? p : 'paper';
   });
   const t = getT(theme);
@@ -47,7 +49,9 @@ export default function App() {
   return (
     <ErrorBoundary>
       <ThemeCtx.Provider value={{ theme, setTheme }}>
-        <BrowserRouter>
+        {/* Hash routes: the Design Studio gateway redirects any path that has no file,
+            so page paths live after the #. */}
+        <HashRouter>
           <div style={{
             display: 'flex', flexDirection: 'column', height: '100vh',
             overflow: 'hidden', backgroundColor: t.bg,
@@ -69,7 +73,7 @@ export default function App() {
             </div>
           </div>
           <Analytics />
-        </BrowserRouter>
+        </HashRouter>
       </ThemeCtx.Provider>
     </ErrorBoundary>
   );

@@ -12,6 +12,7 @@ import LoadTab from '../components/tabs/LoadTab';
 import ZoningTab from '../components/tabs/ZoningTab';
 import { fetchCountries, fetchBoundaries, addCountriesSource, addBaseLayers, raiseBoundaries } from '../utils/basemap';
 import { source, layer } from '../utils/mapSource';
+import { dataPath } from '../utils/paths';
 
 function downloadBlob(content, filename, type = 'application/octet-stream') {
   const blob = new Blob([content], { type });
@@ -101,19 +102,19 @@ export default function CountryPage() {
 
   // Static data — fetch once
   useEffect(() => {
-    fetch('/data/tariffs.json').then(r => r.json()).then(setTariffs).catch(() => {});
-    fetch('/data/access.json').then(r => r.json()).then(setAccess).catch(() => {});
-    fetch('/data/zones/index.json').then(r => r.json()).then(setZonesIndex).catch(() => setZonesIndex({}));
+    fetch(dataPath('tariffs.json')).then(r => r.json()).then(setTariffs).catch(() => {});
+    fetch(dataPath('access.json')).then(r => r.json()).then(setAccess).catch(() => {});
+    fetch(dataPath('zones/index.json')).then(r => r.json()).then(setZonesIndex).catch(() => setZonesIndex({}));
   }, []);
 
   useEffect(() => {
-    fetch('/data/regions.json').then(r => r.json()).then(d => {
+    fetch(dataPath('regions.json')).then(r => r.json()).then(d => {
       for (const region of (d.regions || [])) {
         const country = region.countries.find(c => c.iso === iso);
         if (country) {
           setInfo({ country, region });
           // Check GPPD availability for this region
-          fetch(`/data/cache/region_plants_${region.id}_gppd.geojson`, { method: 'HEAD' })
+          fetch(dataPath(`cache/region_plants_${region.id}_gppd.geojson`), { method: 'HEAD' })
             .then(r => setGppdAvailable(r.ok))
             .catch(() => setGppdAvailable(false));
           return;
@@ -151,11 +152,11 @@ export default function CountryPage() {
       const [countries, boundaries, plantsGJ, linesGJ, subsGJ, lcGJ, admin1GJ] = await Promise.all([
         fetchCountries('10m'),
         fetchBoundaries('10m'),
-        fetch(`/data/cache/region_plants_${region.id}.geojson`).then(r => r.json()),
-        fetch(`/data/cache/region_lines_${region.id}.geojson`).then(r => r.json()),
-        fetch(`/data/cache/region_substations_${region.id}.geojson`).then(r => r.json()).catch(() => ({ type: 'FeatureCollection', features: [] })),
-        fetch(`/data/region_load_centers_${region.id}.geojson`).then(r => r.json()).catch(() => ({ type: 'FeatureCollection', features: [] })),
-        fetch(`/data/cache/region_admin1_${region.id}.geojson`).then(r => r.ok ? r.json() : { type: 'FeatureCollection', features: [] }).catch(() => ({ type: 'FeatureCollection', features: [] })),
+        fetch(dataPath(`cache/region_plants_${region.id}.geojson`)).then(r => r.json()),
+        fetch(dataPath(`cache/region_lines_${region.id}.geojson`)).then(r => r.json()),
+        fetch(dataPath(`cache/region_substations_${region.id}.geojson`)).then(r => r.json()).catch(() => ({ type: 'FeatureCollection', features: [] })),
+        fetch(dataPath(`region_load_centers_${region.id}.geojson`)).then(r => r.json()).catch(() => ({ type: 'FeatureCollection', features: [] })),
+        fetch(dataPath(`cache/region_admin1_${region.id}.geojson`)).then(r => r.ok ? r.json() : { type: 'FeatureCollection', features: [] }).catch(() => ({ type: 'FeatureCollection', features: [] })),
       ]);
 
 
@@ -622,10 +623,10 @@ export default function CountryPage() {
     const label = `${iso}_${nZones}z`;
 
     Promise.all([
-      fetch(`/data/zones/${label}_zones.geojson`).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(`/data/zones/${label}_topo.json`).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(`/data/zones/${label}_inner.geojson`).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(`/data/zones/${label}_corridors.geojson`).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(dataPath(`zones/${label}_zones.geojson`)).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(dataPath(`zones/${label}_topo.json`)).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(dataPath(`zones/${label}_inner.geojson`)).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(dataPath(`zones/${label}_corridors.geojson`)).then(r => r.ok ? r.json() : null).catch(() => null),
     ]).then(([zonesGJ, topo, innerGJ, corridorsGJ]) => {
       if (!zonesGJ || !source(map, 'zone-fills')) return;
       zonesGJ.features.forEach((f, i) => { f.properties.color = COLORS[i % COLORS.length]; });
@@ -688,7 +689,7 @@ export default function CountryPage() {
     const filename = plantSource === 'gppd'
       ? `region_plants_${info.region.id}_gppd.geojson`
       : `region_plants_${info.region.id}.geojson`;
-    fetch(`/data/cache/${filename}`)
+    fetch(dataPath(`cache/${filename}`))
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(data => {
         const cf = countryFeatureRef.current;
@@ -711,8 +712,8 @@ export default function CountryPage() {
     if (!info) return;
     setCapacity(null);
     const cf = plantSource === 'gppd'
-      ? `/data/cache/region_capacity_${info.region.id}_gppd.json`
-      : `/data/cache/region_capacity_${info.region.id}.json`;
+      ? dataPath(`cache/region_capacity_${info.region.id}_gppd.json`)
+      : dataPath(`cache/region_capacity_${info.region.id}.json`);
     fetch(cf).then(r => r.json()).then(setCapacity).catch(() => {});
   }, [info, plantSource]);
 
@@ -720,7 +721,7 @@ export default function CountryPage() {
   useEffect(() => {
     setFleetAge(null);
     if (!info || plantSource !== 'gppd') return;
-    fetch(`/data/cache/region_age_${info.region.id}_gppd.json`)
+    fetch(dataPath(`cache/region_age_${info.region.id}_gppd.json`))
       .then(r => r.ok ? r.json() : null)
       .then(setFleetAge)
       .catch(() => setFleetAge(null));

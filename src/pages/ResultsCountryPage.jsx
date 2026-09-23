@@ -42,6 +42,7 @@ import PanelZoomControl, { usePanelZoom, unzoom } from '../components/PanelZoom'
 import { ttl, scenList } from '../utils/chartTitle';
 import { barTotalPlugin, barTotalFooter } from '../utils/barTotals';
 import { useZoneLabels, useZoneLabelMarkers } from '../utils/zoneLabels';
+import { dataPath } from '../utils/paths';
 
 // ── Constants / helpers (shared with RegionPage) ──────────────────────────────
 
@@ -194,7 +195,7 @@ export default function ResultsCountryPage() {
   useEffect(()=>{ovScenarioRef.current=ovScenario;},[ovScenario]);
   useEffect(()=>{hoursDataRef.current=hoursData;},[hoursData]);
 
-  useEffect(()=>{track('results_view',{type:'country',region:regionId,country:countryDecoded});fetch('/data/regions.json').then(r=>r.json()).then(d=>{const r=(d.regions||[]).find(r=>r.id===regionId);setRegion(r||null);});},[regionId,countryDecoded]);
+  useEffect(()=>{track('results_view',{type:'country',region:regionId,country:countryDecoded});fetch(dataPath('regions.json')).then(r=>r.json()).then(d=>{const r=(d.regions||[]).find(r=>r.id===regionId);setRegion(r||null);});},[regionId,countryDecoded]);
 
   // The inputs a results map still needs: the zoning, the hour weights, and the two
   // things that describe the border — how much can cross it and what it costs there.

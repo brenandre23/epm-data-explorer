@@ -6,6 +6,7 @@ import { ttl } from '../utils/chartTitle';
 import { useTheme } from '../App';
 import { getT, mapStyle } from '../constants';
 import { fetchCountries, fetchBoundaries, addCountriesSource, addBaseLayers, regionFilter, addRegionCoast, raiseBoundaries } from '../utils/basemap';
+import { dataPath } from '../utils/paths';
 
 export default function WorldPage() {
   const { theme } = useTheme();
@@ -17,7 +18,7 @@ export default function WorldPage() {
   const [disambig, setDisambig] = useState(null); // {x, y, iso, regions[]}
 
   useEffect(() => {
-    fetch('/data/regions.json').then(r => r.json()).then(d => setRegions(d.regions));
+    fetch(dataPath('regions.json')).then(r => r.json()).then(d => setRegions(d.regions));
   }, []);
 
   useEffect(() => {

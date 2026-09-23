@@ -45,6 +45,7 @@ import PanelZoomControl, { usePanelZoom, unzoom } from '../components/PanelZoom'
 import { ttl, scenList } from '../utils/chartTitle';
 import { barTotalPlugin, barTotalFooter } from '../utils/barTotals';
 import { useZoneLabels, useZoneLabelMarkers } from '../utils/zoneLabels';
+import { dataPath } from '../utils/paths';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -317,7 +318,7 @@ export default function ResultsRegionPage() {
   // ── Load region + geo ──────────────────────────────────────────────────────
   useEffect(() => {
     track('results_view', { type: 'region', region: regionId });
-    fetch('/data/regions.json').then(r=>r.json()).then(d => {
+    fetch(dataPath('regions.json')).then(r=>r.json()).then(d => {
       const r=(d.regions||[]).find(r=>r.id===regionId); setRegion(r||null);
     });
     // Written scenario descriptions, when the study has any (utils/scenarioDocs).

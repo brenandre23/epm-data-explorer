@@ -30,6 +30,7 @@ import { barTotalPlugin } from '../utils/barTotals';
 import { useZoneLabels, useZoneLabelMarkers } from '../utils/zoneLabels';
 import { rankPlants, plantDisplay, plantFmt } from '../utils/plantRank';
 import { netImportGWh } from '../utils/netImport';
+import { dataPath } from '../utils/paths';
 
 const MAP_PALETTE = ['#1B6CA8','#36B5B5','#E8C547','#4DA6FF','#4169E1','#85C1E9','#2E9EC8','#5EBCBA','#1A5276','#7EC8E3','#14A094','#4CAFE8','#EDD770','#AED6F1','#1F618D','#0A6B70'];
 function fmt(n,d=0){if(n==null||isNaN(n))return'—';return n.toLocaleString('en-US',{maximumFractionDigits:d});}
@@ -102,7 +103,7 @@ export default function ResultsZonePage() {
   const isDrRef = useRef(false); const drStartX = useRef(0); const drStartW = useRef(0);
   useEffect(()=>{hoursDataRef.current=hoursData;},[hoursData]);
 
-  useEffect(()=>{track('results_view',{type:'zone',region:regionId,zone:zoneIdDecoded});fetch('/data/regions.json').then(r=>r.json()).then(d=>{const r=(d.regions||[]).find(r=>r.id===regionId);setRegion(r||null);});},[regionId,zoneIdDecoded]);
+  useEffect(()=>{track('results_view',{type:'zone',region:regionId,zone:zoneIdDecoded});fetch(dataPath('regions.json')).then(r=>r.json()).then(d=>{const r=(d.regions||[]).find(r=>r.id===regionId);setRegion(r||null);});},[regionId,zoneIdDecoded]);
   // The border capacities belong to the scenario, not to the folder: LC_BSSC is the run
   // where Georgia-Romania exists at all. config.csv says where the base files live and
   // scenarios.csv which ones this scenario swaps, so both are asked before fetching.

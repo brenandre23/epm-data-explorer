@@ -24,6 +24,7 @@ import CJChart from '../components/CJChart';
 import MapDownload from '../components/MapDownload';
 import { ttl } from '../utils/chartTitle';
 import PanelZoomControl, { usePanelZoom, unzoom } from '../components/PanelZoom';
+import { dataPath } from '../utils/paths';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -228,7 +229,7 @@ export default function EpmCountryPage() {
   // ── Load region ─────────────────────────────────────────────────────────────
   useEffect(() => {
     track('country_view', { region: regionId, country: countryNameDecoded });
-    fetch('/data/regions.json').then(r => r.json()).then(d => {
+    fetch(dataPath('regions.json')).then(r => r.json()).then(d => {
       const r = (d.regions || []).find(r => r.id === regionId);
       setRegion(r || null);
     });

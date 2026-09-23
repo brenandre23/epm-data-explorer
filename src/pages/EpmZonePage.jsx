@@ -24,6 +24,7 @@ import CJChart from '../components/CJChart';
 import MapDownload from '../components/MapDownload';
 import { ttl } from '../utils/chartTitle';
 import PanelZoomControl, { usePanelZoom, unzoom } from '../components/PanelZoom';
+import { dataPath } from '../utils/paths';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -172,7 +173,7 @@ export default function EpmZonePage() {
   // Region (+ its EPM data) only depends on the region, NOT the zone — so switching
   // zone within a region doesn't reload everything / rebuild the map (no black flash).
   useEffect(() => {
-    fetch('/data/regions.json').then(r => r.json()).then(d => {
+    fetch(dataPath('regions.json')).then(r => r.json()).then(d => {
       const r = (d.regions || []).find(r => r.id === regionId);
       setRegion(r || null);
     });
