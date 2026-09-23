@@ -1,26 +1,14 @@
-// --- Data source PER BRANCH ---
-// By default, the data comes from the public EPM repo (GitHub).
-// For "private" branches, it is served from the R2 bucket (private store):
-// just add the branch name to R2_BRANCHES.
+// --- Data source ---
+// Model inputs and results come from the public EPM repo on GitHub, one branch per
+// published region.
 const GITHUB_RAW  = 'https://raw.githubusercontent.com/ESMAP-World-Bank-Group/EPM';
-// Served through the app's own origin, not straight from the bucket: the bucket's
-// public hostname is a *.r2.dev one, and corporate proxies block that whole domain --
-// which showed up as a colleague seeing no inputs and no results on the one region
-// whose data lives there, while every GitHub-backed region worked. /r2 is rewritten
-// to the bucket by vercel.json in production and by the dev proxy in vite.config.js.
-const R2_BASE     = '/r2';
-const R2_BRANCHES = new Set(['blacksea_2026']);   // branches whose data lives in R2
-function rawBase(branch) { return R2_BRANCHES.has(branch) ? R2_BASE : GITHUB_RAW; }
+function rawBase() { return GITHUB_RAW; }
 
-/** Public URL of a repo file, honouring the R2/GitHub split above.
+/** Public URL of a repo file.
  *  `path` is relative to the repo root, e.g. 'epm/input/data_x/supply/pGenDataInput.csv'.
- *  Use this for download links too: hardcoding the GitHub raw host makes R2 branches
- *  serve GitHub's "404: Not Found" body as the file's contents. */
+ *  Use this for download links too, so every link follows the one data source. */
 export function rawFileUrl(branch, path) {
-  const u = `${rawBase(branch)}/${branch}/${path}`;
-  // Absolute, because this one is shown to people and pasted elsewhere: a bare /r2/...
-  // is a working link in the page and a dead string anywhere else.
-  return u[0] === '/' && typeof location !== 'undefined' ? location.origin + u : u;
+  return `${rawBase(branch)}/${branch}/${path}`;
 }
 
 /** Public URL of a result CSV: {outputDir}/{simRun}/{scenario}/output_csv/{filename} */
@@ -78,20 +66,11 @@ export async function resolveOutputDir(branch) {
 /** List result run folder names in a branch. Returns string[] (unsorted), or null
  *  when the listing could not be read at all.
  *
- *  R2 branches read a manifest.json (public R2 can't list directories); GitHub
- *  branches list the output dir via the Contents API. The null is the point: a host
+ *  Lists the output dir via the GitHub Contents API. The null is the point: a host
  *  a network refuses to reach and a branch with nothing published look identical
  *  from here, and telling a user to publish results that are already published sends
  *  them the wrong way. Callers distinguish the two in what they put on screen. */
 export async function fetchRunList(branch, outputDir) {
-  if (R2_BRANCHES.has(branch)) {
-    try {
-      const res = await fetch(`${R2_BASE}/${branch}/${outputDir}/manifest.json`);
-      if (res.ok) { const j = await res.json(); return Array.isArray(j.runs) ? j.runs : []; }
-      if (res.status === 404) return [];   // answered, and there is nothing there
-    } catch { /* blocked, offline, DNS: not an answer */ }
-    return null;
-  }
   const items = await fetchGitHubDir(branch, outputDir);
   if (!items) return null;
   return items.filter(i => i.type === 'dir').map(i => i.name);
@@ -120,28 +99,13 @@ async function probeResultFiles(branch, outputDir, simRun, scenario) {
   return hits.filter(Boolean).sort();
 }
 
-/** The result CSVs one run/scenario holds, most trustworthy source first:
- *
- *    1. manifest.json's `files` map -- written by the publish script from the
- *       very list of files it uploaded, so it cannot drift from what is there.
- *    2. the GitHub Contents API, for branches served from the repo.
- *    3. probing the merged catalogue, for an R2 branch whose manifest predates
- *       the `files` map (it carries `runs` alone).
+/** The result CSVs one run/scenario holds: the GitHub Contents API listing, or,
+ *  when that can't be read, a probe of the merged catalogue.
  *
  *  Returns [] only when the run genuinely exposes nothing.
  */
 export async function fetchOutputFileList(branch, outputDir, simRun, scenario) {
   if (!branch || !outputDir || !simRun || !scenario) return [];
-  if (R2_BRANCHES.has(branch)) {
-    try {
-      const res = await fetch(`${R2_BASE}/${branch}/${outputDir}/manifest.json`);
-      if (res.ok) {
-        const named = (await res.json())?.files?.[simRun]?.[scenario];
-        if (Array.isArray(named) && named.length) return [...named].sort();
-      }
-    } catch { /* fall through to probing */ }
-    return probeResultFiles(branch, outputDir, simRun, scenario);
-  }
   const items = await fetchGitHubDir(branch, `${outputDir}/${simRun}/${scenario}/output_csv`);
   if (items) {
     return items.filter(i => i.type === 'file' && /\.csv$/i.test(i.name)).map(i => i.name).sort();
