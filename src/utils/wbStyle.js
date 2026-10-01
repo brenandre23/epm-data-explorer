@@ -119,9 +119,106 @@ const SOLID_WIDTH = { stops: [[1, 0.65], [7, 1.1], [10, 1.4], [14, 2.0], [17, 2.
 // is dropped.
 const DASHED_ARRAY = [5, 7];
 
+// The Bank's ADM0 label tiles name the non-determined legal status areas like
+// countries, and carry nothing but the label text (`_name`, `_name1`, ... one
+// field per label class) -- so they can only be told apart by that text. The
+// app names two of them, in italics, and none of the others. These are every
+// NDLSA label in WB_GAD_Denominations, z3-z9, as of 2026-10-01.
+export const HIDDEN_ADM0_LABELS = [
+  'Abyei', 'British Indian Ocean Territory (U.K.)', 'Falkland Islands/Islas Malvinas',
+  'Jammu and Kashmir', 'South Georgia (U.K.)', 'South Sandwich Islands (U.K.)',
+];
+export const ITALIC_ADM0_LABELS = ['West Bank', 'Gaza', 'Western Sahara'];
+const ITALIC_FONT = ['Ubuntu Bold Italic'];   // the italic of the labels' Ubuntu Bold
+
+// Country name sizes. The Bank's label classes run from 8.5 px (small
+// countries) to 20 px (large ones at z7+), a spread that reads as shouting next
+// to whispering once zoomed in. Each published size is pulled halfway toward
+// 12 px, then the whole set is drawn at 80%.
+const ADM0_SIZE_MID = 12;
+const ADM0_SIZE_SPREAD = 0.5;
+const ADM0_SIZE_SCALE = 0.8;
+
+/** A country label's drawn size, in px, from the Bank's published size. */
+export function adm0LabelSize(px) {
+  return (ADM0_SIZE_MID + (px - ADM0_SIZE_MID) * ADM0_SIZE_SPREAD) * ADM0_SIZE_SCALE;
+}
+
+function adm0SizeSpec(size) {
+  if (typeof size === 'number') return adm0LabelSize(size);
+  if (size?.stops) return { ...size, stops: size.stops.map(([z, v]) => [z, adm0LabelSize(v)]) };
+  return size;
+}
+
+// The basemap style draws only 7 of the label service's 21 ADM0 classes, so no
+// small country (Lesotho, Eswatini, Rwanda, Qatar, Luxembourg...) is ever named.
+// The missing country classes are added here in the basemap's own medium-country
+// look, at the service's zooms and anchors (WB_GAD_Denominations root.json).
+// Territories stay out, as the basemap has them, except the contested ones the
+// app names -- Western Sahara (class 5), West Bank and Gaza (class 14); `only`
+// limits a class to those names.
+const EXTRA_ADM0_CLASSES = [
+  { cls: 11, minzoom: 3.6236 },                       // Countries SM
+  { cls: 12, minzoom: 3.6236, anchor: 'left' },       // Countries SM, left-justified
+  { cls: 13, minzoom: 3.6236, anchor: 'right' },      // Countries SM, right-justified
+  { cls: 15, minzoom: 4.6236, anchor: 'left' },       // Countries XS, left-justified
+  { cls: 16, minzoom: 4.6236, anchor: 'right' },      // Countries XS, right-justified
+  { cls: 5, minzoom: 3, only: ['Western Sahara'] },  // Territories MD/LG
+  { cls: 14, minzoom: 3.8866, only: ['West Bank', 'Gaza'] },  // Territories SM
+];
+const ONLY_KEY = 'rpe:only';
+const TEMPLATE_ADM0_LAYER = 'WB GAD ADM0/Countries MD';
+
+/**
+ * The style's layers with the missing ADM0 label classes inserted after the
+ * medium-country layer they are modelled on. Used for the map and the export.
+ */
+export function withExtraAdm0Labels(layers) {
+  const i = layers.findIndex(l => l.id === TEMPLATE_ADM0_LAYER);
+  if (i < 0) return layers;
+  const template = layers[i];
+  const extras = EXTRA_ADM0_CLASSES.map(({ cls, minzoom, anchor, only }) => {
+    const layout = { ...template.layout, 'text-field': `{_name${cls}}` };
+    if (anchor) Object.assign(layout, { 'text-anchor': anchor, 'text-justify': anchor,
+      'text-offset': [anchor === 'left' ? 0.4 : -0.4, 0] });
+    return {
+      ...template, id: `${TEMPLATE_ADM0_LAYER} (class ${cls})`, minzoom, layout,
+      filter: ['==', `_label_class${cls}`, cls],
+      metadata: { ...(template.metadata || {}), ...(only ? { [ONLY_KEY]: only } : {}) },
+    };
+  });
+  return [...layers.slice(0, i + 1), ...extras, ...layers.slice(i + 1)];
+}
+
+/** The names a label layer is limited to, or null for all of them. */
+export function adm0LabelsOnly(layer) {
+  return layer.metadata?.[ONLY_KEY] || null;
+}
+
+/** Hide and italicise ADM0 labels by their text, read from the layer's own name field. */
+function adjustAdm0Label(layer, layout) {
+  const field = /^\{(_name\d*)\}$/.exec(layout['text-field'] || '')?.[1];
+  if (!field) return layer.filter;
+  layout['text-size'] = adm0SizeSpec(layout['text-size']);
+  layout['text-font'] = ['case', ['in', ['get', field], ['literal', ITALIC_ADM0_LABELS]],
+    ['literal', ITALIC_FONT], ['literal', layout['text-font']]];
+  const only = adm0LabelsOnly(layer);
+  const keep = only ? ['in', ['get', field], ['literal', only]]
+    : ['!', ['in', ['get', field], ['literal', HIDDEN_ADM0_LABELS]]];
+  return layer.filter ? ['all', convertLegacy(layer.filter), keep] : keep;
+}
+
+// The published filters are legacy ['==', key, value]; MapLibre will not mix
+// legacy and expression syntax in one filter.
+function convertLegacy(filter) {
+  const [op, key, value] = filter;
+  return op === '==' && typeof key === 'string' ? ['==', ['get', key], value] : filter;
+}
+
 function themeWbLayer(layer, group, p) {
   const paint = { ...layer.paint };
   const layout = { ...layer.layout };
+  let filter = layer.filter;
   if (group === 'boundaries') {
     if (layer.id.endsWith('/Dashed Cutout')) {
       layout.visibility = 'none';
@@ -135,11 +232,14 @@ function themeWbLayer(layer, group, p) {
   } else if (group === 'countryNames' || group === 'adminLabels') {
     paint['text-color'] = p.name;
     paint['text-halo-color'] = p.halo;
+    if (group === 'countryNames') filter = adjustAdm0Label(layer, layout);
   } else if (group === 'capitals') {
     paint['text-color'] = p.capital;
     paint['text-halo-color'] = p.halo;
   }
-  return { ...layer, paint, layout };
+  const themed = { ...layer, paint, layout };
+  if (filter) themed.filter = filter;
+  return themed;
 }
 
 function themeEsriLayer(layer, group, p) {
@@ -255,7 +355,7 @@ const SATELLITE_SOURCE_DEF = {
 export function buildWbStyle(base, t, view = DEFAULT_WB_VIEW) {
   const p = palette(t);
   const layers = [];
-  for (const layer of base.layers) {
+  for (const layer of withExtraAdm0Labels(base.layers)) {
     const group = groupOf(layer);
     const themed = (layer.source === 'esri' || layer.type === 'background')
       ? themeEsriLayer(layer, group, p)

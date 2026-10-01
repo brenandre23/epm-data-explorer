@@ -87,6 +87,30 @@ export function regionFilter(isos, areas = []) {
     ['all', NON_DETERMINED_ONLY, ['in', ['get', 'WB_NAME'], ['literal', areas]]]];
 }
 
+// The two contested territories the app names. Bank style sets their names in
+// italics wherever they appear; the map's own labels follow the same rule (see
+// ITALIC_ADM0_LABELS in wbStyle.js).
+const ITALIC_NAMES = new Set(['West Bank and Gaza', 'Western Sahara']);
+
+/** True for a name Bank style sets in italics. */
+export function isItalicName(name) {
+  return ITALIC_NAMES.has(name);
+}
+
+/** A name for popup HTML, italicised where Bank style asks. */
+export function nameHtml(name) {
+  return isItalicName(name) ? `<i>${name}</i>` : name;
+}
+
+/**
+ * Whether the app may name a feature, from its properties. Countries yes; of
+ * the non-determined areas only the contested territories above -- the rest
+ * stay unnamed, on the map and in popups alike.
+ */
+export function isNamed(props) {
+  return props.STATUS !== 'non-determined' || isItalicName(props.WB_NAME);
+}
+
 /**
  * Put a page's layers in cartographic order once it has added them:
  *   - country fills go just above the basemap's land, below its water, so a

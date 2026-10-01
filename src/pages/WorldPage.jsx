@@ -5,7 +5,7 @@ import MapDownload from '../components/MapDownload';
 import { ttl } from '../utils/chartTitle';
 import { useTheme } from '../App';
 import { getT } from '../constants';
-import { fetchGeo, addCountriesSource, regionFilter, raiseBoundaries } from '../utils/basemap';
+import { fetchGeo, addCountriesSource, regionFilter, raiseBoundaries, isNamed, isItalicName, nameHtml } from '../utils/basemap';
 import { buildWbStyle, useWbStyleBase, DEFAULT_WB_VIEW } from '../utils/wbStyle';
 import { dataPath } from '../utils/paths';
 
@@ -120,13 +120,15 @@ export default function WorldPage() {
         map.setFeatureState({ source: 'countries', id: hoveredId }, { hover: true });
 
         const props = e.features[0].properties;
+        if (!isNamed(props)) { popup.remove(); return; }
         const rs = regionsFor(props);
-        const countryName = rs[0]?.countryName || props.WB_NAME || props.ISO_A3;
+        // The polygon's own Bank name, not regions.json's (EPM's model names).
+        const countryName = props.WB_NAME || rs[0]?.countryName || props.ISO_A3;
         const subtitle = rs.length > 1
           ? rs.map(r => r.name).join(' · ') + ' · click to choose'
           : (rs[0]?.name || '') + ' · click to explore';
         popup.setLngLat(e.lngLat)
-          .setHTML(`<b>${countryName}</b><br><span style="opacity:0.65">${subtitle}</span>`)
+          .setHTML(`<b>${nameHtml(countryName)}</b><br><span style="opacity:0.65">${subtitle}</span>`)
           .addTo(map);
       });
 
@@ -150,7 +152,8 @@ export default function WorldPage() {
           navigate(`/region/${rs[0].id}${suffix}`);
         } else {
           const pixel = map.project(e.lngLat);
-          setDisambig({ x: pixel.x, y: pixel.y, iso, regions: rs, suffix });
+          const name = isNamed(props) ? props.WB_NAME || rs[0]?.countryName : null;
+          setDisambig({ x: pixel.x, y: pixel.y, iso, name, regions: rs, suffix });
         }
       });
 
@@ -188,7 +191,9 @@ export default function WorldPage() {
           }}>
             <div style={{ fontSize: '0.5rem', letterSpacing: '2px', fontWeight: 700,
               color: t.lblMuted, textTransform: 'uppercase', marginBottom: 8 }}>
-              {disambig.regions[0]?.countryName || disambig.iso} · Choose region
+              <span style={isItalicName(disambig.name) ? { fontStyle: 'italic' } : undefined}>
+                {disambig.name}
+              </span>{disambig.name ? ' · ' : ''}Choose region
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {disambig.regions.map(r => (
