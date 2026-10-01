@@ -79,16 +79,22 @@ FIELDS = "FID,ISO_A3,WB_A3,WB_STATUS,SOV_ISO_A3,NAM_0,WB_REGION"
 #   0.005 ~ 550 m: Kenya 21 KB
 #   0.002 ~ 220 m: Kenya 41 KB -- the default: at country-page zooms the
 #                  coarser setting leaves visible slivers along coasts
-# The world file only ever shows at z < 6, where 1 px is 2-10 km, so it is
-# simplified far harder and loses islands smaller than a couple of pixels.
+# The world file is generalised harder, but keeps every island: at 0.02
+# (~2 km) it is 6.4 MB, 2.2 MB gzipped, and holds its shape through the world
+# page's usual zooms. 0.08 with rings under 0.2 deg dropped was 0.9 MB but
+# lost small islands and read as blocky.
 DETAIL_TOLERANCE = 0.002
-WORLD_TOLERANCE = 0.08
-WORLD_MIN_RING = 0.2    # drop rings whose extent is under this many degrees
+WORLD_TOLERANCE = 0.02
+WORLD_MIN_RING = 0      # drop rings whose extent is under this many degrees
 PRECISION = 5           # decimal places kept, ~1 m
 PAGE = 50               # features per request; geometry makes bigger pages time out
 
 # The Bank's own code where the app's differs (regions.json, every data file).
 ISO_ALIASES = {"XKX": "KOS"}
+
+# Names the app uses in place of the service's NAM_0. Everything else shows the
+# Bank's name as published.
+NAME_OVERRIDES = {"COG": "Republic of Congo"}
 
 _ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = _ROOT / "public" / "data"
@@ -100,8 +106,10 @@ REGIONS_JSON = DATA_DIR / "regions.json"
 # It drives which regions an area appears in (here) and what colour it takes
 # (src/utils/basemap.js). Every entry is a policy statement; see the file.
 NDLSA_JSON = DATA_DIR / "ndlsa.json"
-CLAIMANTS = {name: a["claimants"]
-             for name, a in json.loads(NDLSA_JSON.read_text(encoding="utf-8"))["areas"].items()}
+_NDLSA = json.loads(NDLSA_JSON.read_text(encoding="utf-8"))["areas"]
+CLAIMANTS = {name: a["claimants"] for name, a in _NDLSA.items()}
+# Regions an area is kept out of although one of its parties is a member.
+EXCLUDED = {name: set(a.get("exclude_regions", [])) for name, a in _NDLSA.items()}
 
 
 def log(msg):
@@ -241,7 +249,8 @@ def clean(feature):
     p = {k: (v.strip() if isinstance(v, str) else v) for k, v in feature["properties"].items()}
     name = p["NAM_0"]
     iso = ISO_ALIASES.get(p["ISO_A3"], p["ISO_A3"])
-    out = {"ISO_A3": iso, "WB_A3": p["WB_A3"], "WB_NAME": name, "WB_REGION": p["WB_REGION"]}
+    out = {"ISO_A3": iso, "WB_A3": p["WB_A3"], "WB_NAME": NAME_OVERRIDES.get(iso, name),
+           "WB_REGION": p["WB_REGION"]}
     if p["WB_STATUS"] == NDLSA_STATUS:
         if name not in CLAIMANTS:
             raise SystemExit(f"new non-determined area in the service, add it to {NDLSA_JSON.name}: {name!r}")
@@ -326,14 +335,16 @@ def merge_by_iso(countries):
 
 
 def derive_non_determined(regions, areas):
-    """Areas a region shows: those with a claimant among its members."""
+    """Areas a region shows: those with a claimant among its members, less the
+    regions the policy table keeps each area out of."""
     by_region = {}
     for r in regions:
         if r.get("type") == "meta":
             continue
         members = {c["iso"] for c in r.get("countries", [])}
         names = sorted({f["properties"]["WB_NAME"] for f in areas
-                        if members & set(f["properties"]["CLAIMANTS"].split(","))})
+                        if members & set(f["properties"]["CLAIMANTS"].split(","))
+                        and r["id"] not in EXCLUDED[f["properties"]["WB_NAME"]]})
         by_region[r["id"]] = names
     return by_region
 

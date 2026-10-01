@@ -5,6 +5,7 @@
     "Read by tools/prepare_gad.py (region membership) and src/utils/basemap.js (fill colour).",
     "claimants: ISO_A3 of the parties. An area is drawn in the midpoint of its parties' fills.",
     "fill: optional override -- {color} fixed fill, {neutral} never a party colour, {hatch} grey stripes.",
+    "exclude_regions: optional region ids the area is kept out of although a party is a member.",
     "REVIEW with the cartography owner before changing; every entry is a policy statement."
   ],
   "areas": {
@@ -27,9 +28,9 @@
     "Golan Heights":                            { "claimants": ["SYR", "ISR"], "fill": { "hatch": true } },
     "Shebaa Farms Dispute":                     { "claimants": ["LBN", "SYR", "ISR"] },
     "No Man's Land":                            { "claimants": ["ISR", "PSE"] },
-    "UN Buffer Zone":                           { "claimants": ["CYP"] },
-    "British Indian Ocean Territory":           { "claimants": ["GBR", "MUS"] },
-    "Falkland Islands":                         { "claimants": ["GBR", "ARG"], "fill": { "neutral": true } },
-    "South Georgia and South Sandwich Islands": { "claimants": ["GBR", "ARG"], "fill": { "neutral": true } }
+    "UN Buffer Zone":                           { "claimants": ["CYP"], "exclude_regions": ["entsoe"] },
+    "British Indian Ocean Territory":           { "claimants": ["GBR", "MUS"], "exclude_regions": ["entsoe"] },
+    "Falkland Islands":                         { "claimants": ["GBR", "ARG"], "fill": { "neutral": true }, "exclude_regions": ["mercosur", "entsoe"] },
+    "South Georgia and South Sandwich Islands": { "claimants": ["GBR", "ARG"], "fill": { "neutral": true }, "exclude_regions": ["mercosur", "entsoe"] }
   }
 }
