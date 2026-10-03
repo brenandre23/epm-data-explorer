@@ -46,12 +46,14 @@ function guessName(wrap) {
  */
 function fingerprint(datasets) {
   let h = 0x811c9dc5;
+  const mix = n => { h = Math.imul((h ^ (Math.round((Number(n) || 0) * 1000) | 0)) >>> 0, 0x01000193) >>> 0; };
   for (const d of datasets || []) {
     for (const v of d.data || []) {
-      const n = typeof v === 'number' ? v
-        : (v && typeof v === 'object') ? (v.y ?? v.x ?? 0)
-        : (v == null ? 0 : Number(v) || 0);
-      h = Math.imul((h ^ (Math.round(n * 1000) | 0)) >>> 0, 0x01000193) >>> 0;
+      // A point object carries up to three values -- a bubble's x, y and radius --
+      // and any of them can change alone: a plant whose utilization or capacity
+      // moves while its LCOE holds is a new bubble at the same height.
+      if (v && typeof v === 'object') { mix(v.x); mix(v.y); mix(v.r); }
+      else mix(v);
     }
   }
   return h;
