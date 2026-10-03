@@ -30,7 +30,7 @@ import { zoneCentroidMap } from '../utils/centroids';
 import VariantPicker from '../components/VariantPicker';
 import ScenarioTab from '../components/ScenarioTab';
 import { fetchScenarioDocs, scenarioDocIndex } from '../utils/scenarioDocs';
-import { fetchGeo, addCountriesSource, regionFilter, raiseBoundaries } from '../utils/basemap';
+import { fetchGeo, fetchBboxes, boundsFor, addCountriesSource, regionFilter, raiseBoundaries } from '../utils/basemap';
 import { buildWbStyle, applyWbView, useWbStyleBase, ZONE_MAP_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source } from '../utils/mapSource';
 import { usePromotedEpmData } from '../utils/usePromotedZones';
@@ -59,21 +59,6 @@ const ZONE_PALETTE = CHART_PALETTE; // legacy alias for chart code
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function fitBounds(isos, countries) {
-  let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
-  for (const f of countries.features) {
-    if (!isos.includes(f.properties.ISO_A3)) continue;
-    const geom = f.geometry;
-    const rings = geom.type === 'Polygon' ? geom.coordinates : geom.coordinates.flatMap(p => p);
-    for (const ring of rings)
-      for (const [lon, lat] of ring) {
-        if (lon < minLon) minLon = lon; if (lon > maxLon) maxLon = lon;
-        if (lat < minLat) minLat = lat; if (lat > maxLat) maxLat = lat;
-      }
-  }
-  if (!isFinite(minLon)) return null;
-  return [[minLon - 0.5, minLat - 0.5], [maxLon + 0.5, maxLat + 0.5]];
-}
 
 function makeLayerFilter(status, fuelsOff, minMw) {
   const clauses = [['==', ['get', 'status'], status], ['>=', ['get', 'mw'], minMw]];
@@ -2245,6 +2230,14 @@ export default function RegionPage() {
       canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl: false,
     });
     mapRef.current = map;
+    // Frame the region as soon as the (small, cached) bbox file is in, not
+    // after the style and the region geometry have loaded -- otherwise the page
+    // sits on the zoom-2 world view for the whole download.
+    let live = true;
+    fetchBboxes().then(bboxes => {
+      const bounds = boundsFor(bboxes, 'regions', region.id, 0.5);
+      if (live && bounds) map.fitBounds(bounds, { padding: 40, duration: 0 });
+    }).catch(err => console.error('bboxes', err));
 
     const popup = new maplibregl.Popup({
       closeButton: false, closeOnClick: false, offset: 10,
@@ -2253,9 +2246,6 @@ export default function RegionPage() {
 
     map.on('load', async () => {
       const countries = await fetchGeo('region', region.id);
-
-      const bounds = fitBounds(isos, countries);
-      if (bounds) map.fitBounds(bounds, { padding: 40, duration: 0 });
 
       addCountriesSource(map, countries);
       const tv = getT(theme);
@@ -2584,6 +2574,7 @@ export default function RegionPage() {
     });
 
     return () => {
+      live = false;
       popup.remove();
       donutMarkersRef.current.forEach(m => m.remove());
       donutMarkersRef.current = [];

@@ -555,14 +555,16 @@ export default function ResultsRegionPage() {
     const map = new maplibregl.Map({
       container:containerRef.current, style:buildWbStyle(wbBase, getT(theme), ZONE_MAP_VIEW),
       center:[lons.length?lons.reduce((a,b)=>a+b,0)/lons.length:20, lats.length?lats.reduce((a,b)=>a+b,0)/lats.length:0],
-      zoom:4, minZoom:1, maxZoom:14, canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl:false,
+      zoom:4, minZoom:1, maxZoom:14,
+      // Open already framed, so the view doesn't jump once the style has loaded.
+      bounds: bounds || undefined, fitBoundsOptions: { padding:60, maxZoom:8 },
+      canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl:false,
     });
     mapRef.current = map;
     const popup = new maplibregl.Popup({ closeButton:false, closeOnClick:false, offset:10, className:`popup-${theme}` });
 
     map.on('load', async () => {
       const tv = getT(theme);
-      if (bounds) map.fitBounds(bounds, { padding:60, duration:0, maxZoom:8 });
 
       // SDF arrow image (white triangle = inside, supports icon-color)
       const aW=14, aH=12;

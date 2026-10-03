@@ -5,7 +5,7 @@ import MapDownload from '../components/MapDownload';
 import { ttl } from '../utils/chartTitle';
 import { useTheme } from '../App';
 import { getT } from '../constants';
-import { fetchGeo, addCountriesSource, regionFilter, raiseBoundaries, isNamed, isItalicName, nameHtml } from '../utils/basemap';
+import { fetchGeo, fetchBboxes, addCountriesSource, regionFilter, raiseBoundaries, isNamed, isItalicName, nameHtml } from '../utils/basemap';
 import { buildWbStyle, useWbStyleBase, DEFAULT_WB_VIEW } from '../utils/wbStyle';
 import { dataPath } from '../utils/paths';
 
@@ -20,6 +20,7 @@ export default function WorldPage() {
   const [disambig, setDisambig] = useState(null); // {x, y, iso, regions[]}
 
   useEffect(() => {
+    fetchBboxes().catch(() => {}); // so a click frames the region at once
     fetch(dataPath('regions.json')).then(r => r.json()).then(d => setRegions(d.regions));
   }, []);
 

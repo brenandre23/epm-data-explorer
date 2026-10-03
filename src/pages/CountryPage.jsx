@@ -10,7 +10,7 @@ import CountryOverview from '../components/CountryOverview';
 import REResourcesTab from '../components/tabs/REResourcesTab';
 import LoadTab from '../components/tabs/LoadTab';
 import ZoningTab from '../components/tabs/ZoningTab';
-import { fetchGeo, addCountriesSource, raiseBoundaries } from '../utils/basemap';
+import { fetchGeo, fetchBboxes, boundsFor, addCountriesSource, raiseBoundaries } from '../utils/basemap';
 import { buildWbStyle, applyWbView, useWbStyleBase, DEFAULT_WB_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source, layer } from '../utils/mapSource';
 import { dataPath } from '../utils/paths';
@@ -43,23 +43,6 @@ function pointInFeature(pt, feature) {
   return false;
 }
 
-function fitBoundsCountry(iso, countries) {
-  let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
-  for (const f of countries.features) {
-    if (f.properties.ISO_A3 !== iso) continue;
-    const geom = f.geometry;
-    const rings = geom.type === 'Polygon'
-      ? geom.coordinates
-      : geom.coordinates.flatMap(p => p);
-    for (const ring of rings)
-      for (const [lon, lat] of ring) {
-        if (lon < minLon) minLon = lon; if (lon > maxLon) maxLon = lon;
-        if (lat < minLat) minLat = lat; if (lat > maxLat) maxLat = lat;
-      }
-  }
-  if (!isFinite(minLon)) return null;
-  return [[minLon - 0.8, minLat - 0.8], [maxLon + 0.8, maxLat + 0.8]];
-}
 
 export default function CountryPage() {
   const { iso }      = useParams();
@@ -144,6 +127,18 @@ export default function CountryPage() {
       canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl: false,
     });
     mapRef.current = map;
+    // Frame the country as soon as the (small, cached) bbox file is in, not
+    // after the style and every data layer have loaded (see RegionPage).
+    let live = true;
+    fetchBboxes().then(bboxes => {
+      const bounds = boundsFor(bboxes, 'countries', iso, 0.8);
+      if (!live || !bounds) return;
+      map.fitBounds(bounds, { padding: 60, duration: 0, maxZoom: 9 });
+      setCountryCenter({
+        lon: (bounds[0][0] + bounds[1][0]) / 2,
+        lat: (bounds[0][1] + bounds[1][1]) / 2,
+      });
+    }).catch(err => console.error('bboxes', err));
 
     const popup = new maplibregl.Popup({
       closeButton: false, closeOnClick: false, offset: 10,
@@ -160,15 +155,6 @@ export default function CountryPage() {
         fetch(dataPath(`cache/region_admin1_${region.id}.geojson`)).then(r => r.ok ? r.json() : { type: 'FeatureCollection', features: [] }).catch(() => ({ type: 'FeatureCollection', features: [] })),
       ]);
 
-
-      const bounds = fitBoundsCountry(iso, countries);
-      if (bounds) {
-        map.fitBounds(bounds, { padding: 60, duration: 0, maxZoom: 9 });
-        setCountryCenter({
-          lon: (bounds[0][0] + bounds[1][0]) / 2,
-          lat: (bounds[0][1] + bounds[1][1]) / 2,
-        });
-      }
 
       // Filter plants strictly inside the country polygon (point-in-polygon)
       // Lines filtered by bbox (segments cross borders by nature)
@@ -447,7 +433,7 @@ export default function CountryPage() {
       raiseBoundaries(map);
     });
 
-    return () => { mapReadyRef.current = false; popup.remove(); mapRef.current?.remove(); };
+    return () => { live = false; mapReadyRef.current = false; popup.remove(); mapRef.current?.remove(); };
   }, [info, theme, wbBase]);
 
   // ── Basemap switcher ─────────────────────────────────────────────────────

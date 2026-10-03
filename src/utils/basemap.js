@@ -81,6 +81,29 @@ export async function fetchGeo(kind, id) {
   return fromTopology(topo);
 }
 
+let bboxesPromise = null;
+/** Extents of every country and region, keyed by ISO_A3 / region id. */
+export function fetchBboxes() {
+  if (!bboxesPromise) {
+    bboxesPromise = fetchJson(dataPath('geo/bboxes.json'))
+      .catch(err => { bboxesPromise = null; throw err; });
+  }
+  return bboxesPromise;
+}
+
+/**
+ * MapLibre bounds for a country or region, padded in degrees, or null when
+ * the extract has no such feature.
+ *
+ * @param {object} bboxes  from fetchBboxes()
+ * @param {'countries'|'regions'} kind
+ */
+export function boundsFor(bboxes, kind, id, pad = 0.5) {
+  const b = bboxes?.[kind]?.[id];
+  if (!b) return null;
+  return [[b[0] - pad, b[1] - pad], [b[2] + pad, b[3] + pad]];
+}
+
 /**
  * @param {import('maplibre-gl').Map} map
  * @param {object} fc  a FeatureCollection from fetchGeo()
