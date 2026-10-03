@@ -14,6 +14,7 @@ import { fetchGeo, fetchBboxes, boundsFor, addCountriesSource, raiseBoundaries }
 import { buildWbStyle, applyWbView, useWbStyleBase, DEFAULT_WB_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source, layer } from '../utils/mapSource';
 import { dataPath } from '../utils/paths';
+import { pointInFeature } from '../utils/pointInFeature';
 import { fetchData } from '../utils/dataCache';
 
 function downloadBlob(content, filename, type = 'application/octet-stream') {
@@ -25,24 +26,6 @@ function downloadBlob(content, filename, type = 'application/octet-stream') {
 }
 
 // Ray-casting point-in-polygon (handles Polygon + MultiPolygon)
-function pointInRing(pt, ring) {
-  let inside = false;
-  const [x, y] = pt;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i], [xj, yj] = ring[j];
-    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi)
-      inside = !inside;
-  }
-  return inside;
-}
-function pointInFeature(pt, feature) {
-  const g = feature.geometry;
-  if (g.type === 'Polygon')
-    return g.coordinates.some(ring => pointInRing(pt, ring));
-  if (g.type === 'MultiPolygon')
-    return g.coordinates.some(poly => poly.some(ring => pointInRing(pt, ring)));
-  return false;
-}
 
 
 export default function CountryPage() {

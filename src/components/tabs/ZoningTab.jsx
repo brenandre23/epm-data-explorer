@@ -1,26 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { FUEL_COLORS, FUEL_LABELS, getT } from '../../constants';
 import { dataPath } from '../../utils/paths';
+import { pointInFeature } from '../../utils/pointInFeature';
 import { fetchData } from '../../utils/dataCache';
 
 const ZONE_COLORS = ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac'];
 
-function pointInRing(pt, ring) {
-  let inside = false;
-  const [x, y] = pt;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i], [xj, yj] = ring[j];
-    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi)
-      inside = !inside;
-  }
-  return inside;
-}
-function pointInFeature(pt, feature) {
-  const g = feature.geometry;
-  if (g.type === 'Polygon') return g.coordinates.some(ring => pointInRing(pt, ring));
-  if (g.type === 'MultiPolygon') return g.coordinates.some(poly => poly.some(ring => pointInRing(pt, ring)));
-  return false;
-}
 
 function fmtMw(mw) {
   if (mw >= 1000) return `${(mw / 1000).toFixed(1)} GW`;
