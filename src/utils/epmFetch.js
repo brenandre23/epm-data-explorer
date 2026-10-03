@@ -1,3 +1,5 @@
+import { fetchTextOrNull } from './dataCache';
+
 // --- Data source ---
 // Model inputs and results come from the public EPM repo on GitHub, one branch per
 // published region.
@@ -24,9 +26,8 @@ const API_BASE = 'https://api.github.com/repos/ESMAP-World-Bank-Group/EPM';
 export async function fetchGitHubDir(branch, path) {
   const url = `${API_BASE}/contents/${path}?ref=${branch}`;
   try {
-    const res = await fetch(url, { headers: { Accept: 'application/vnd.github.v3+json' } });
-    if (!res.ok) return null;
-    return await res.json();
+    const text = await fetchTextOrNull(url, { headers: { Accept: 'application/vnd.github.v3+json' } });
+    return text === null ? null : JSON.parse(text);
   } catch { return null; }
 }
 
@@ -128,9 +129,8 @@ export async function fetchFileSize(url) {
 export async function fetchResultCSV(branch, simRun, scenario, filename, outputDir = 'epm/output') {
   const url = resultCsvUrl(branch, simRun, scenario, filename, outputDir);
   try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return parseCSV(await res.text());
+    const text = await fetchTextOrNull(url);
+    return text === null ? null : parseCSV(text);
   } catch { return null; }
 }
 
@@ -326,9 +326,8 @@ function parseCSV(text) {
 
 async function fetchJSON(url) {
   try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return await res.json();
+    const text = await fetchTextOrNull(url);
+    return text === null ? null : JSON.parse(text);
   } catch { return null; }
 }
 
@@ -365,9 +364,8 @@ export async function fetchZonesGeoJSON(branch, dataFolder, stem = null, run = n
 export async function fetchInputScenarios(branch, outputDir, simRun) {
   const url = `${rawBase(branch)}/${branch}/${outputDir}/${simRun}/input_scenarios.csv`;
   try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const text = await res.text();
+    const text = await fetchTextOrNull(url);
+    if (text === null) return null;
     const firstLine = text.split('\n')[0] || '';
     const cols = firstLine.split(',').map(c => c.trim()).filter(Boolean);
     return cols.slice(1); // drop 'paramNames' header
@@ -383,18 +381,16 @@ export async function fetchRunRootCSV(branch, outputDir, simRun, filename) {
   if (!branch || !outputDir || !simRun) return null;
   const url = `${rawBase(branch)}/${branch}/${outputDir}/${simRun}/${filename}`;
   try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return parseCSV(await res.text());
+    const text = await fetchTextOrNull(url);
+    return text === null ? null : parseCSV(text);
   } catch { return null; }
 }
 
 export async function fetchZonesExtGeoJSON(branch, dataFolder) {
   const url = `${rawBase(branch)}/${branch}/epm/input/${dataFolder}/zones_ext.geojson`;
   try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return await res.json();
+    const text = await fetchTextOrNull(url);
+    return text === null ? null : JSON.parse(text);
   } catch { return null; }
 }
 
@@ -403,18 +399,16 @@ export async function fetchZonesExtGeoJSON(branch, dataFolder) {
 export async function fetchZonesOffgridGeoJSON(branch, dataFolder) {
   const url = `${rawBase(branch)}/${branch}/epm/input/${dataFolder}/zones_offgrid.geojson`;
   try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return await res.json();
+    const text = await fetchTextOrNull(url);
+    return text === null ? null : JSON.parse(text);
   } catch { return null; }
 }
 
 export async function fetchEpmCSV(branch, dataFolder, relPath) {
   const url = `${rawBase(branch)}/${branch}/epm/input/${dataFolder}/${relPath}`;
   try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return parseCSV(await res.text());
+    const text = await fetchTextOrNull(url);
+    return text === null ? null : parseCSV(text);
   } catch {
     return null;
   }
@@ -424,9 +418,7 @@ export async function fetchEpmCSV(branch, dataFolder, relPath) {
 export async function fetchEpmText(branch, dataFolder, relPath) {
   const url = `${rawBase(branch)}/${branch}/epm/input/${dataFolder}/${relPath}`;
   try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return await res.text();
+    return await fetchTextOrNull(url);
   } catch {
     return null;
   }

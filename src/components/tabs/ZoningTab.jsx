@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { FUEL_COLORS, FUEL_LABELS, getT } from '../../constants';
 import { dataPath } from '../../utils/paths';
+import { fetchData } from '../../utils/dataCache';
 
 const ZONE_COLORS = ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac'];
 
@@ -61,7 +62,7 @@ export default function ZoningTab({ iso, theme, regionId }) {
 
   // Load zones index
   useEffect(() => {
-    fetch(dataPath('zones/index.json')).then(r => r.json())
+    fetchData(dataPath('zones/index.json'))
       .then(d => {
         setIndex(d);
         if (d[iso]?.length) setNZones(d[iso][0]);
@@ -72,9 +73,9 @@ export default function ZoningTab({ iso, theme, regionId }) {
   // Load region plants + substations once
   useEffect(() => {
     if (!regionId) return;
-    fetch(dataPath(`cache/region_plants_${regionId}.geojson`)).then(r => r.json()).then(setPlants).catch(() => setPlants(null));
-    fetch(dataPath(`cache/region_substations_${regionId}.geojson`)).then(r => r.json()).then(setSubs).catch(() => setSubs(null));
-    fetch(dataPath(`cache/region_lines_${regionId}.geojson`)).then(r => r.json()).then(setLines).catch(() => setLines(null));
+    fetchData(dataPath(`cache/region_plants_${regionId}.geojson`)).then(setPlants).catch(() => setPlants(null));
+    fetchData(dataPath(`cache/region_substations_${regionId}.geojson`)).then(setSubs).catch(() => setSubs(null));
+    fetchData(dataPath(`cache/region_lines_${regionId}.geojson`)).then(setLines).catch(() => setLines(null));
   }, [regionId]);
 
   // Load zone GeoJSON + topo when config changes
@@ -83,8 +84,8 @@ export default function ZoningTab({ iso, theme, regionId }) {
     setLoading(true);
     const label = `${iso}_${nZones}z`;
     Promise.all([
-      fetch(dataPath(`zones/${label}_zones.geojson`)).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(dataPath(`zones/${label}_topo.json`)).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetchData(dataPath(`zones/${label}_zones.geojson`)).catch(() => null),
+      fetchData(dataPath(`zones/${label}_topo.json`)).catch(() => []),
     ]).then(([gj, tp]) => {
       setZonesGJ(gj);
       setTopo(tp || []);

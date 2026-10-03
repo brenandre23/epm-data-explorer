@@ -4,6 +4,7 @@ import { getT, THEME_LIST, THEMES } from '../constants';
 import { useEffect, useState, useMemo } from 'react';
 import { track } from '../analytics';
 import { dataPath } from '../utils/paths';
+import { fetchData } from '../utils/dataCache';
 
 const REGIONAL_EXPLORER_URL = 'https://designstudio.worldbank.org/regional-power-explorer/';
 
@@ -15,16 +16,14 @@ function useBreadcrumb() {
     const parts = location.pathname.split('/').filter(Boolean);
     if (parts.length === 0) { setLabel(''); return; }
     if (parts[0] === 'region' && parts[1]) {
-      fetch(dataPath('regions.json'))
-        .then(r => r.json())
+      fetchData(dataPath('regions.json'))
         .then(d => {
           const r = (d.regions || []).find(r => r.id === parts[1]);
           setLabel(r ? r.name : parts[1]);
         })
         .catch(() => setLabel(parts[1]));
     } else if (parts[0] === 'country' && parts[1]) {
-      fetch(dataPath('regions.json'))
-        .then(r => r.json())
+      fetchData(dataPath('regions.json'))
         .then(d => {
           for (const r of (d.regions || [])) {
             const c = r.countries.find(c => c.iso === parts[1]);
@@ -57,8 +56,7 @@ export default function Navbar() {
         ? decodeURIComponent(p[4])
         : null;
     if (!nameInUrl) { setCountryIso(null); return; }
-    fetch(dataPath('regions.json'))
-      .then(r => r.json())
+    fetchData(dataPath('regions.json'))
       .then(d => {
         for (const r of (d.regions || [])) {
           const c = (r.countries || []).find(c => c.name === nameInUrl);

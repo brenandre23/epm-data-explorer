@@ -14,6 +14,7 @@ import { fetchGeo, fetchBboxes, boundsFor, addCountriesSource, raiseBoundaries }
 import { buildWbStyle, applyWbView, useWbStyleBase, DEFAULT_WB_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source, layer } from '../utils/mapSource';
 import { dataPath } from '../utils/paths';
+import { fetchData } from '../utils/dataCache';
 
 function downloadBlob(content, filename, type = 'application/octet-stream') {
   const blob = new Blob([content], { type });
@@ -87,13 +88,13 @@ export default function CountryPage() {
 
   // Static data — fetch once
   useEffect(() => {
-    fetch(dataPath('tariffs.json')).then(r => r.json()).then(setTariffs).catch(() => {});
-    fetch(dataPath('access.json')).then(r => r.json()).then(setAccess).catch(() => {});
-    fetch(dataPath('zones/index.json')).then(r => r.json()).then(setZonesIndex).catch(() => setZonesIndex({}));
+    fetchData(dataPath('tariffs.json')).then(setTariffs).catch(() => {});
+    fetchData(dataPath('access.json')).then(setAccess).catch(() => {});
+    fetchData(dataPath('zones/index.json')).then(setZonesIndex).catch(() => setZonesIndex({}));
   }, []);
 
   useEffect(() => {
-    fetch(dataPath('regions.json')).then(r => r.json()).then(d => {
+    fetchData(dataPath('regions.json')).then(d => {
       for (const region of (d.regions || [])) {
         const country = region.countries.find(c => c.iso === iso);
         if (country) {
@@ -148,11 +149,11 @@ export default function CountryPage() {
     map.on('load', async () => {
       const [countries, plantsGJ, linesGJ, subsGJ, lcGJ, admin1GJ] = await Promise.all([
         fetchGeo('country', iso),
-        fetch(dataPath(`cache/region_plants_${region.id}.geojson`)).then(r => r.json()),
-        fetch(dataPath(`cache/region_lines_${region.id}.geojson`)).then(r => r.json()),
-        fetch(dataPath(`cache/region_substations_${region.id}.geojson`)).then(r => r.json()).catch(() => ({ type: 'FeatureCollection', features: [] })),
-        fetch(dataPath(`region_load_centers_${region.id}.geojson`)).then(r => r.json()).catch(() => ({ type: 'FeatureCollection', features: [] })),
-        fetch(dataPath(`cache/region_admin1_${region.id}.geojson`)).then(r => r.ok ? r.json() : { type: 'FeatureCollection', features: [] }).catch(() => ({ type: 'FeatureCollection', features: [] })),
+        fetchData(dataPath(`cache/region_plants_${region.id}.geojson`)),
+        fetchData(dataPath(`cache/region_lines_${region.id}.geojson`)),
+        fetchData(dataPath(`cache/region_substations_${region.id}.geojson`)).catch(() => ({ type: 'FeatureCollection', features: [] })),
+        fetchData(dataPath(`region_load_centers_${region.id}.geojson`)).catch(() => ({ type: 'FeatureCollection', features: [] })),
+        fetchData(dataPath(`cache/region_admin1_${region.id}.geojson`)).catch(() => ({ type: 'FeatureCollection', features: [] })),
       ]);
 
 
@@ -601,10 +602,10 @@ export default function CountryPage() {
     const label = `${iso}_${nZones}z`;
 
     Promise.all([
-      fetch(dataPath(`zones/${label}_zones.geojson`)).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(dataPath(`zones/${label}_topo.json`)).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(dataPath(`zones/${label}_inner.geojson`)).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(dataPath(`zones/${label}_corridors.geojson`)).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetchData(dataPath(`zones/${label}_zones.geojson`)).catch(() => null),
+      fetchData(dataPath(`zones/${label}_topo.json`)).catch(() => []),
+      fetchData(dataPath(`zones/${label}_inner.geojson`)).catch(() => null),
+      fetchData(dataPath(`zones/${label}_corridors.geojson`)).catch(() => null),
     ]).then(([zonesGJ, topo, innerGJ, corridorsGJ]) => {
       if (!zonesGJ || !source(map, 'zone-fills')) return;
       zonesGJ.features.forEach((f, i) => { f.properties.color = COLORS[i % COLORS.length]; });
@@ -667,8 +668,7 @@ export default function CountryPage() {
     const filename = plantSource === 'gppd'
       ? `region_plants_${info.region.id}_gppd.geojson`
       : `region_plants_${info.region.id}.geojson`;
-    fetch(dataPath(`cache/${filename}`))
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+    fetchData(dataPath(`cache/${filename}`))
       .then(data => {
         const cf = countryFeatureRef.current;
         const filtered = {
@@ -692,15 +692,14 @@ export default function CountryPage() {
     const cf = plantSource === 'gppd'
       ? dataPath(`cache/region_capacity_${info.region.id}_gppd.json`)
       : dataPath(`cache/region_capacity_${info.region.id}.json`);
-    fetch(cf).then(r => r.json()).then(setCapacity).catch(() => {});
+    fetchData(cf).then(setCapacity).catch(() => {});
   }, [info, plantSource]);
 
   // Fleet age — GPPD only
   useEffect(() => {
     setFleetAge(null);
     if (!info || plantSource !== 'gppd') return;
-    fetch(dataPath(`cache/region_age_${info.region.id}_gppd.json`))
-      .then(r => r.ok ? r.json() : null)
+    fetchData(dataPath(`cache/region_age_${info.region.id}_gppd.json`)).catch(() => null)
       .then(setFleetAge)
       .catch(() => setFleetAge(null));
   }, [plantSource, info]);

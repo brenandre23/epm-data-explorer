@@ -47,6 +47,7 @@ import { ttl, scenList } from '../utils/chartTitle';
 import { barTotalPlugin, barTotalFooter } from '../utils/barTotals';
 import { useZoneLabels, useZoneLabelMarkers } from '../utils/zoneLabels';
 import { dataPath } from '../utils/paths';
+import { fetchData } from '../utils/dataCache';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -320,7 +321,7 @@ export default function ResultsRegionPage() {
   // ── Load region + geo ──────────────────────────────────────────────────────
   useEffect(() => {
     track('results_view', { type: 'region', region: regionId });
-    fetch(dataPath('regions.json')).then(r=>r.json()).then(d => {
+    fetchData(dataPath('regions.json')).then(d => {
       const r=(d.regions||[]).find(r=>r.id===regionId); setRegion(r||null);
     });
     // Written scenario descriptions, when the study has any (utils/scenarioDocs).

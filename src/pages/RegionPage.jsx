@@ -39,6 +39,7 @@ import MapDownload from '../components/MapDownload';
 import { ttl } from '../utils/chartTitle';
 import PanelZoomControl, { usePanelZoom, unzoom } from '../components/PanelZoom';
 import { dataPath } from '../utils/paths';
+import { fetchData } from '../utils/dataCache';
 
 // chart.js via CDN — no npm dep
 // Map zone fills — blues/teals/gold only
@@ -2017,21 +2018,21 @@ export default function RegionPage() {
 
   // Static data
   useEffect(() => {
-    fetch(dataPath('tariffs.json')).then(r => r.json()).then(setTariffs).catch(() => {});
-    fetch(dataPath('access.json')).then(r => r.json()).then(setAccess).catch(() => {});
+    fetchData(dataPath('tariffs.json')).then(setTariffs).catch(() => {});
+    fetchData(dataPath('access.json')).then(setAccess).catch(() => {});
   }, []);
 
   // Region metadata
   useEffect(() => {
     track('region_view', { region: regionId });
-    fetch(dataPath('regions.json')).then(r => r.json()).then(d => {
+    fetchData(dataPath('regions.json')).then(d => {
       const r = (d.regions || []).find(r => r.id === regionId);
       setRegion(r || null);
     });
     setCapacity(null);
     // Written scenario descriptions, when the study has any (utils/scenarioDocs).
     fetchScenarioDocs(regionId).then(setScnDocs);
-    fetch(dataPath(`cache/region_capacity_${regionId}.json`)).then(r => r.json()).then(setCapacity).catch(() => {});
+    fetchData(dataPath(`cache/region_capacity_${regionId}.json`)).then(setCapacity).catch(() => {});
     setFuelsOff(new Set()); setStatusOff(new Set()); setKvsOff(new Set());
     setLinesOn(true); setPlantsOn(true); setSubsOn(false);
     setLoadCentersOn(false); setLcMinPop(300_000); setLcCircleScale(1.0);
@@ -2207,8 +2208,7 @@ export default function RegionPage() {
   // Fleet age — GPPD only
   useEffect(() => {
     if (plantSource !== 'gppd') return;
-    fetch(dataPath(`cache/region_age_${regionId}_gppd.json`))
-      .then(r => r.ok ? r.json() : null).catch(() => {});
+    fetchData(dataPath(`cache/region_age_${regionId}_gppd.json`)).catch(() => null).catch(() => {});
   }, [plantSource, regionId]);
 
   // ── Map initialisation ────────────────────────────────────────────────────
@@ -2444,12 +2444,10 @@ export default function RegionPage() {
       } else {
         // ── OSM map ──────────────────────────────────────────────────────────
         const [plantsGJ, linesGJ, subsGJ, lcGJ] = await Promise.all([
-          fetch(dataPath(`cache/region_plants_${regionId}.geojson`)).then(r => r.json()),
-          fetch(dataPath(`cache/region_lines_${regionId}.geojson`)).then(r => r.json()),
-          fetch(dataPath(`cache/region_substations_${regionId}.geojson`))
-            .then(r => r.json()).catch(() => ({ type: 'FeatureCollection', features: [] })),
-          fetch(dataPath(`region_load_centers_${regionId}.geojson`))
-            .then(r => r.json()).catch(() => ({ type: 'FeatureCollection', features: [] })),
+          fetchData(dataPath(`cache/region_plants_${regionId}.geojson`)),
+          fetchData(dataPath(`cache/region_lines_${regionId}.geojson`)),
+          fetchData(dataPath(`cache/region_substations_${regionId}.geojson`)).catch(() => ({ type: 'FeatureCollection', features: [] })),
+          fetchData(dataPath(`region_load_centers_${regionId}.geojson`)).catch(() => ({ type: 'FeatureCollection', features: [] })),
         ]);
 
         map.addSource('plants',       { type: 'geojson', data: plantsGJ });
@@ -2710,13 +2708,12 @@ export default function RegionPage() {
     const suffix = plantSource === 'gppd' ? '_gppd' : plantSource === 'gem' ? '_gem' : '';
     const f  = `region_plants_${regionId}${suffix}.geojson`;
     const cf = `region_capacity_${regionId}${suffix}.json`;
-    fetch(dataPath(`cache/${f}`))
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+    fetchData(dataPath(`cache/${f}`))
       .then(data => {
         source(map, 'plants').setData(data);
         const fuels = new Set(data.features.map(f => f.properties.fuel).filter(f => FUEL_COLORS[f]));
         setPresentFuels(fuels);
-        return fetch(dataPath(`cache/${cf}`)).then(r => r.json());
+        return fetchData(dataPath(`cache/${cf}`));
       })
       .then(setCapacity)
       .catch(() => {
