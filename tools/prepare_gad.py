@@ -20,12 +20,15 @@ for Esri JSON output, not f=geojson, and only down to roughly the 0.01 level --
 so features are pulled as Esri JSON, converted here, and the coarse world file
 gets a further Douglas-Peucker pass. Nothing here needs geopandas.
 
+Geometry is published as quantized, delta-encoded TopoJSON. The browser
+decodes it to GeoJSON for MapLibre; model/run geometry is independent.
+
 Outputs (public/data/geo/):
-    world.geojson             every feature, coarse -- world and meta-region pages
-    country/<ISO_A3>.geojson  one country plus the areas it is a claimant of, detail
+    world.topo.json             every feature, coarse -- world and meta-region pages
+    country/<ISO_A3>.topo.json  one country plus the areas it is a claimant of, detail
                               -- only for countries that belong to a region, the
                               only ones with a country page
-    region/<id>.geojson       a region's member countries plus its areas, detail
+    region/<id>.topo.json       a region's member countries plus its areas, detail
     bboxes.json               [minLon, minLat, maxLon, maxLat] per country and
                               region, for fitBounds -- so no page has to walk
                               geometry to frame itself
@@ -86,6 +89,8 @@ FIELDS = "FID,ISO_A3,WB_A3,WB_STATUS,SOV_ISO_A3,NAM_0,WB_REGION"
 DETAIL_TOLERANCE = 0.002
 WORLD_TOLERANCE = 0.02
 WORLD_MIN_RING = 0      # drop rings whose extent is under this many degrees
+DETAIL_GRID = 0.00005   # ~6 m, below the detailed geometry simplification
+WORLD_GRID = 0.0005     # ~56 m, below the world geometry simplification
 PRECISION = 5           # decimal places kept, ~1 m
 PAGE = 50               # features per request; geometry makes bigger pages time out
 
@@ -288,6 +293,70 @@ def collection(features):
     return {"type": "FeatureCollection", "features": features}
 
 
+def topology(features, grid):
+    """Features as TopoJSON, quantized to `grid` degrees and delta-encoded.
+
+    Each ring is its own arc -- borders two countries share are not merged --
+    which keeps the decoder in src/utils/basemap.js a few lines long. Rings
+    that collapse under the grid are dropped, with their holes when it is an
+    outer ring. Returns the topology and how many rings were dropped.
+    """
+    arcs, geometries, dropped = [], [], 0
+    for f in features:
+        polys = []
+        for poly in polygons(f["geometry"]):
+            rings = []
+            for i, ring in enumerate(poly):
+                q = []
+                for x, y in ring:
+                    p = (round(x / grid), round(y / grid))
+                    if not q or p != q[-1]:
+                        q.append(p)
+                if q[-1] != q[0]:
+                    q.append(q[0])
+                # Only rings the grid collapses; one that arrives degenerate
+                # (Douglas-Peucker leaves Vatican City and Monaco as two
+                # points in the world file) passes through as it is.
+                if len(set(q)) < 3 and len({tuple(p) for p in ring}) >= 3:
+                    if i == 0:          # the outer ring: its holes go with it
+                        dropped += len(poly)
+                        break
+                    dropped += 1
+                    continue
+                rings.append([len(arcs)])
+                arcs.append([list(q[0])] + [[b[0] - a[0], b[1] - a[1]] for a, b in zip(q, q[1:])])
+            if rings:
+                polys.append(rings)
+        if not polys:
+            raise SystemExit(f"{f['properties']['WB_NAME']} vanishes at grid {grid}; use a finer grid")
+        geometries.append({"type": "MultiPolygon", "arcs": polys, "properties": f["properties"]})
+    topo = {"type": "Topology",
+            "transform": {"scale": [grid, grid], "translate": [0, 0]},
+            "objects": {"features": {"type": "GeometryCollection", "geometries": geometries}},
+            "arcs": arcs}
+    return topo, dropped
+
+
+def read_topology(path):
+    """The FeatureCollection in a file topology() wrote."""
+    topo = json.loads(Path(path).read_text(encoding="utf-8"))
+    (sx, sy), (tx, ty) = topo["transform"]["scale"], topo["transform"]["translate"]
+    rings = []
+    for arc in topo["arcs"]:
+        x = y = 0
+        ring = []
+        for dx, dy in arc:
+            x += dx
+            y += dy
+            ring.append([x * sx + tx, y * sy + ty])
+        rings.append(ring)
+    return collection([
+        {"type": "Feature", "properties": g["properties"],
+         "geometry": {"type": "MultiPolygon",
+                      "coordinates": [[rings[a] for [a] in poly] for poly in g["arcs"]]}}
+        for g in topo["objects"]["features"]["geometries"]])
+
+
 def write_json(path, obj, compact=True):
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="\n") as f:
@@ -297,6 +366,13 @@ def write_json(path, obj, compact=True):
             json.dump(obj, f, ensure_ascii=False, indent=1)
             f.write("\n")
     return path.stat().st_size
+
+
+def write_topology(path, features, grid):
+    topo, dropped = topology(features, grid)
+    if dropped:
+        log(f"  {path.name}: {dropped} rings under the {grid} deg grid dropped")
+    return write_json(path, topo)
 
 
 def polygons(geometry):
@@ -375,9 +451,9 @@ def main():
     ap.add_argument("--tolerance", type=float, default=DETAIL_TOLERANCE,
                     help="maxAllowableOffset in degrees for the detail files (default %(default)s)")
     ap.add_argument("--world-tolerance", type=float, default=WORLD_TOLERANCE,
-                    help="Douglas-Peucker tolerance in degrees for world.geojson (default %(default)s)")
+                    help="Douglas-Peucker tolerance in degrees for world.topo.json (default %(default)s)")
     ap.add_argument("--world-min-ring", type=float, default=WORLD_MIN_RING,
-                    help="drop rings narrower than this many degrees from world.geojson (default %(default)s)")
+                    help="drop rings narrower than this many degrees from world.topo.json (default %(default)s)")
     ap.add_argument("--dry-run", action="store_true", help="fetch and report, write nothing")
     args = ap.parse_args()
 
@@ -420,14 +496,14 @@ def main():
         return
 
     sizes = {}
-    sizes["world.geojson"] = write_json(OUT_DIR / "world.geojson", collection(world))
+    sizes["world.topo.json"] = write_topology(OUT_DIR / "world.topo.json", world, WORLD_GRID)
     sizes["bboxes.json"] = write_json(OUT_DIR / "bboxes.json", boxes)
 
     paged = {c["iso"] for r in regions for c in r.get("countries", [])}
     for iso in sorted(paged & by_iso.keys()):
         mine = [a for a in areas if iso in a["properties"]["CLAIMANTS"].split(",")]
-        sizes[f"country/{iso}"] = write_json(OUT_DIR / "country" / f"{iso}.geojson",
-                                             collection([by_iso[iso]] + mine))
+        sizes[f"country/{iso}"] = write_topology(OUT_DIR / "country" / f"{iso}.topo.json",
+                                                 [by_iso[iso]] + mine, DETAIL_GRID)
     if paged - by_iso.keys():
         log(f"  WARNING no GAD polygon for region members {sorted(paged - by_iso.keys())}")
 
@@ -436,13 +512,13 @@ def main():
             continue
         members = [by_iso[c["iso"]] for c in r.get("countries", []) if c["iso"] in by_iso]
         mine = [a for n in derived[r["id"]] for a in areas_by_name[n]]
-        sizes[f"region/{r['id']}"] = write_json(
-            OUT_DIR / "region" / f"{r['id']}.geojson", collection(members + mine))
+        sizes[f"region/{r['id']}"] = write_topology(
+            OUT_DIR / "region" / f"{r['id']}.topo.json", members + mine, DETAIL_GRID)
 
     update_regions_json(regions_doc, derived, dry_run=False)
 
     log(f"wrote {len(sizes)} files under {OUT_DIR.relative_to(_ROOT)}")
-    for k in ("world.geojson", "bboxes.json"):
+    for k in ("world.topo.json", "bboxes.json"):
         log(f"  {k:24s} {sizes[k]:>10,} bytes")
     region_sizes = sorted(((v, k) for k, v in sizes.items() if k.startswith("region/")), reverse=True)
     log("  largest region files: " + ", ".join(f"{k[7:]} {v:,}" for v, k in region_sizes[:5]))
