@@ -5,7 +5,7 @@ import MapDownload from '../components/MapDownload';
 import { ttl } from '../utils/chartTitle';
 import { useTheme } from '../App';
 import { getT } from '../constants';
-import { fetchGeo, fetchBboxes, addCountriesSource, regionFilter, raiseBoundaries, isNamed, isItalicName, nameHtml } from '../utils/basemap';
+import { fetchGeo, prefetchGeo, fetchBboxes, addCountriesSource, regionFilter, raiseBoundaries, isNamed, isItalicName, nameHtml } from '../utils/basemap';
 import { buildWbStyle, useWbStyleBase, DEFAULT_WB_VIEW } from '../utils/wbStyle';
 import { dataPath } from '../utils/paths';
 import { fetchData } from '../utils/dataCache';
@@ -21,6 +21,7 @@ export default function WorldPage() {
   const [disambig, setDisambig] = useState(null); // {x, y, iso, regions[]}
 
   useEffect(() => {
+    prefetchGeo('world');
     fetchBboxes().catch(() => {}); // so a click frames the region at once
     fetchData(dataPath('regions.json')).then(d => setRegions(d.regions));
   }, []);
@@ -67,8 +68,12 @@ export default function WorldPage() {
     // Close popover on map move
     map.on('movestart', () => setDisambig(null));
 
-    map.on('load', async () => {
+    // On the style, not 'load': 'load' waits for every basemap tile and font
+    // to arrive and draw, and the region colours have no reason to wait for them.
+    let disposed = false;
+    map.once('style.load', async () => {
       const countries = await fetchGeo('world');
+      if (disposed) return;
 
       addCountriesSource(map, countries);
 
@@ -162,7 +167,7 @@ export default function WorldPage() {
       raiseBoundaries(map);
     });
 
-    return () => { mapRef.current?.remove(); setDisambig(null); };
+    return () => { disposed = true; mapRef.current?.remove(); setDisambig(null); };
   }, [regions, theme, wbBase]);
 
   return (

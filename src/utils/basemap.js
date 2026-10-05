@@ -77,8 +77,24 @@ function fromTopology(topo) {
  * @param {string} [id]  region id or ISO_A3; none for 'world'
  */
 export async function fetchGeo(kind, id) {
-  const topo = await fetchJson(dataPath(kind === 'world' ? 'geo/world.topo.json' : `geo/${kind}/${id}.topo.json`));
-  return fromTopology(topo);
+  return fromTopology(await fetchJson(geoPath(kind, id)));
+}
+
+function geoPath(kind, id) {
+  return dataPath(kind === 'world' ? 'geo/world.topo.json' : `geo/${kind}/${id}.topo.json`);
+}
+
+/**
+ * Start downloading a page's geometry as the page opens, instead of after the
+ * map's style -- or, worse, its 'load', which waits for every basemap tile and
+ * font -- so the two load side by side. fetchGeo() then picks up the same
+ * download from the session cache.
+ *
+ * @param {'world'|'region'|'country'} kind
+ * @param {string} [id]  region id or ISO_A3; none for 'world'
+ */
+export function prefetchGeo(kind, id) {
+  fetchJson(geoPath(kind, id)).catch(() => {}); // the page's own fetchGeo() reports it
 }
 
 let bboxesPromise = null;

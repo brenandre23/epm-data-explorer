@@ -30,7 +30,7 @@ import { zoneCentroidMap } from '../utils/centroids';
 import VariantPicker from '../components/VariantPicker';
 import ScenarioTab from '../components/ScenarioTab';
 import { fetchScenarioDocs, scenarioDocIndex } from '../utils/scenarioDocs';
-import { fetchGeo, fetchBboxes, boundsFor, addCountriesSource, regionFilter, raiseBoundaries } from '../utils/basemap';
+import { fetchGeo, prefetchGeo, fetchBboxes, boundsFor, addCountriesSource, regionFilter, raiseBoundaries } from '../utils/basemap';
 import { buildWbStyle, applyWbView, useWbStyleBase, ZONE_MAP_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source } from '../utils/mapSource';
 import { usePromotedEpmData } from '../utils/usePromotedZones';
@@ -2025,6 +2025,9 @@ export default function RegionPage() {
   // Region metadata
   useEffect(() => {
     track('region_view', { region: regionId });
+    // The map waits for the region's EPM data before it is built; its geometry
+    // downloads meanwhile, so it is in hand when the map wants it.
+    prefetchGeo('region', regionId);
     fetchData(dataPath('regions.json')).then(d => {
       const r = (d.regions || []).find(r => r.id === regionId);
       setRegion(r || null);
@@ -2244,8 +2247,11 @@ export default function RegionPage() {
       className: `popup-${theme}`,
     });
 
-    map.on('load', async () => {
+    // On the style, not 'load': 'load' waits for every basemap tile and font to
+    // arrive and draw, and the zones and corridors have no reason to wait for them.
+    map.once('style.load', async () => {
       const countries = await fetchGeo('region', region.id);
+      if (!live) return;
 
       addCountriesSource(map, countries);
       const tv = getT(theme);
@@ -2449,6 +2455,7 @@ export default function RegionPage() {
           fetchData(dataPath(`cache/region_substations_${regionId}.geojson`)).catch(() => ({ type: 'FeatureCollection', features: [] })),
           fetchData(dataPath(`region_load_centers_${regionId}.geojson`)).catch(() => ({ type: 'FeatureCollection', features: [] })),
         ]);
+        if (!live) return;
 
         map.addSource('plants',       { type: 'geojson', data: plantsGJ });
         map.addSource('lines',        { type: 'geojson', data: linesGJ  });
