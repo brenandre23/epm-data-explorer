@@ -33,6 +33,7 @@ import { fetchScenarioDocs, scenarioDocIndex } from '../utils/scenarioDocs';
 import { fetchGeo, prefetchGeo, fetchBboxes, boundsFor, addCountriesSource, regionFilter, raiseBoundaries } from '../utils/basemap';
 import { buildWbStyle, applyWbView, useWbStyleBase, ZONE_MAP_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source } from '../utils/mapSource';
+import { drawLayers } from '../utils/mapLayers';
 import { usePromotedEpmData } from '../utils/usePromotedZones';
 import CJChart from '../components/CJChart';
 import MapDownload from '../components/MapDownload';
@@ -1946,23 +1947,6 @@ function AboutTab({ region, t, epmData, epmLoading, activeFolder }) {
   );
 }
 
-// Run `draw`, which adds layers and binds handlers to them, and return a function
-// that unbinds every handler it bound. A layer handler outlives its layer: without
-// this, re-adding a layer under the same id would fire the old handlers as well.
-// Only top-level calls are recorded; map.on calls itself for a layer's delegates.
-function withTrackedHandlers(map, draw) {
-  const bound = [];
-  const on = map.on;
-  let depth = 0;
-  map.on = (...args) => {
-    if (depth === 0) bound.push(args);
-    depth++;
-    try { return on.apply(map, args); } finally { depth--; }
-  };
-  try { draw(); } finally { delete map.on; }
-  return () => { for (const args of bound) map.off(...args); };
-}
-
 /** The plain region highlight, shown until the EPM zones cover it. */
 function setRegionHighlight(map, visible) {
   for (const id of ['region-fill', 'region-border'])
@@ -2445,10 +2429,7 @@ export default function RegionPage() {
     const popup = popupRef.current;
     const tv = getT(theme);
 
-    const before = map.getStyle();
-    const layersBefore = new Set(before.layers.map(l => l.id));
-    const sourcesBefore = new Set(Object.keys(before.sources));
-    const unbind = withTrackedHandlers(map, () => {
+    const undraw = drawLayers(map, () => {
       // ── EPM map: zone polygons + NTC lines + country donut markers ───────
       const lsgj = epmData.linestringGJ;
       const zonesGJ = epmData.zonesGJ;
@@ -2640,9 +2621,6 @@ export default function RegionPage() {
       // ── Areas of the modelled countries that belong to no zone ──────
       addOffgridLayers(map, tv, epmData.offgridGJ);
     });
-    const after = map.getStyle();
-    const layers = after.layers.map(l => l.id).filter(id => !layersBefore.has(id));
-    const sources = Object.keys(after.sources).filter(id => !sourcesBefore.has(id));
     setRegionHighlight(map, !map.getLayer('zone-fill')); // kept where no zones were drawn
     raiseBoundaries(map);
 
@@ -2653,10 +2631,8 @@ export default function RegionPage() {
       donutMarkersRef.current.forEach(m => m.remove());
       donutMarkersRef.current = [];
       if (mapRef.current !== map) return; // rebuilt: the old map took its layers with it
-      unbind();
+      undraw();
       popup.remove();
-      for (const id of [...layers].reverse()) if (map.getLayer(id)) map.removeLayer(id);
-      for (const id of sources) if (map.getSource(id)) map.removeSource(id);
       setRegionHighlight(map, true);
     };
   }, [baseMap, epmData?.linestringGJ, epmData?.zonesGJ]); // eslint-disable-line react-hooks/exhaustive-deps

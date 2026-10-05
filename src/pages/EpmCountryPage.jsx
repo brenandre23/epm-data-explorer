@@ -18,8 +18,9 @@ import { fetchScenarioConfig, resolveFile, baseName } from '../utils/epmScenario
 import { zoneCentroidMap } from '../utils/centroids';
 import VariantPicker from '../components/VariantPicker';
 import { raiseBoundaries } from '../utils/basemap';
-import { buildWbStyle, useWbStyleBase, ZONE_MAP_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
+import { useWbStyleBase, ZONE_MAP_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source } from '../utils/mapSource';
+import { useBaseMap, drawLayers, frameOnce, memberIso } from '../utils/mapLayers';
 import { usePromotedEpmData } from '../utils/usePromotedZones';
 import CJChart from '../components/CJChart';
 import MapDownload from '../components/MapDownload';
@@ -386,8 +387,18 @@ export default function EpmCountryPage() {
   }, [epmYear, epmData, outputNtc]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Map ──────────────────────────────────────────────────────────────────────
+  // Built before the EPM data (utils/mapLayers), framed on the country -- or on the
+  // region when the model's name for it is not the Bank's -- so the page has its
+  // map at once; the zones and corridors below go on it when the data is in.
+  const frameIso = region ? memberIso(region, countryNameDecoded) : null;
+  const baseMap = useBaseMap(containerRef, mapRef, { wbBase, theme, view: ZONE_MAP_VIEW, scope: region?.id,
+    frame: region ? (frameIso ? { kind: 'countries', id: frameIso } : { kind: 'regions', id: region.id }) : null });
+
+  // The EPM layers, drawn when the data is in and swapped when it changes,
+  // without rebuilding the map.
   useEffect(() => {
-    if (!containerRef.current || !region || !epmData || !wbBase) return;
+    const map = baseMap;
+    if (!map || map !== mapRef.current || !region || !epmData) return;
     const { linestringGJ, zonesGJ } = epmData;
     if (!linestringGJ && !zonesGJ) return;
 
@@ -412,21 +423,15 @@ export default function EpmCountryPage() {
       ? [[Math.min(...lons) - 2, Math.min(...lats) - 2], [Math.max(...lons) + 2, Math.max(...lats) + 2]]
       : null;
 
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: buildWbStyle(wbBase, getT(theme), ZONE_MAP_VIEW),
-      center: [lons.length ? lons.reduce((a,b)=>a+b,0)/lons.length : 20,
-               lats.length ? lats.reduce((a,b)=>a+b,0)/lats.length : 0],
-      zoom: 4, minZoom: 1, maxZoom: 14,
-      // Open already framed, so the view doesn't jump once the style has loaded.
-      bounds: bounds || undefined, fitBoundsOptions: { padding: 60, maxZoom: 8 },
-      canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl: false,
+    // Framed on the country's zones the first time they are drawn for it.
+    frameOnce(map, countryNameDecoded, m => {
+      if (bounds) m.fitBounds(bounds, { padding: 60, maxZoom: 8, duration: 0 });
+      else if (lons.length) m.jumpTo({ center: [lons.reduce((a,b)=>a+b,0)/lons.length, lats.reduce((a,b)=>a+b,0)/lats.length], zoom: 4 });
     });
-    mapRef.current = map;
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10,
       className: `popup-${theme}` });
 
-    map.on('load', async () => {
+    const undraw = drawLayers(map, () => {
       const tv = getT(theme);
 
 
@@ -512,23 +517,23 @@ export default function EpmCountryPage() {
 
       // ── Areas of the modelled countries that belong to no zone ─────────────
       addOffgridLayers(map, tv, epmData.offgridGJ);
-
-      // Donuts + NTC data are drawn / updated in place by the effects below.
-      setMapLoadedCount(c => c + 1);
-      raiseBoundaries(map);
     });
+    raiseBoundaries(map);
+
+    // Donuts + NTC data are drawn / updated in place by the effects below.
+    setMapLoadedCount(c => c + 1);
 
     return () => {
       popup.remove();
       donutMarkersRef.current.forEach(m => m.remove());
       donutMarkersRef.current = [];
-      mapRef.current?.remove();
+      if (mapRef.current === map) undraw(); // else the map was rebuilt and took them with it
     };
-  }, [region, theme, epmData?.linestringGJ, epmData?.zonesGJ, countryNameDecoded, wbBase]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [baseMap, epmData?.linestringGJ, epmData?.zonesGJ, countryNameDecoded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync selZone → map highlight (covers dropdown changes + map reloads)
   useEffect(() => {
-    const map = mapRef.current; if (!map) return;
+    const map = mapRef.current; if (!map?.getLayer('zone-selected')) return; // drawn with the EPM layers
     const f = selZone === 'all' ? '__none__' : selZone;
     try { map.setFilter('zone-selected', ['==', ['get', 'z'], f]); map.setFilter('zone-selected-border', ['==', ['get', 'z'], f]); } catch(e) {}
   }, [selZone, mapLoadedCount]);
