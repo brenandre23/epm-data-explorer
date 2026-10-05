@@ -20,7 +20,7 @@ import {
 } from '../utils/extZones';
 import { addOffgridLayers } from '../utils/offgridZones';
 import { raiseBoundaries } from '../utils/basemap';
-import { buildWbStyle, useWbStyleBase, ZONE_MAP_VIEW } from '../utils/wbStyle';
+import { useWbStyleBase, ZONE_MAP_VIEW } from '../utils/wbStyle';
 import { baseFirst, baseScenario, defaultScenarios } from '../utils/scenarioOrder';
 import { physicalStats } from '../utils/summaryStats';
 import { yzAgg } from '../utils/zoneAgg';
@@ -28,6 +28,7 @@ import { rankPlants, plantDisplay, plantFmt } from '../utils/plantRank';
 import { netImportGWh } from '../utils/netImport';
 import ScenarioPicker, { ScenarioKey } from '../components/ScenarioPicker';
 import { source, markStyleReady, styleReady } from '../utils/mapSource';
+import { useBaseMap, frameOnce, memberIso } from '../utils/mapLayers';
 import { zoneCentroidMap } from '../utils/centroids';
 import { priceDotEl } from '../utils/priceDot';
 import { fetchScenarioConfig, resolveFile, overridesFor } from '../utils/epmScenarios';
@@ -363,19 +364,39 @@ export default function ResultsCountryPage() {
   const minP=priceVals.length?Math.min(...priceVals):0,maxP=priceVals.length?Math.max(...priceVals):100,rngP=maxP-minP||1;
 
   // ── Map ───────────────────────────────────────────────────────────────────────
+  // Built before the zones are in (utils/mapLayers), framed on the country -- or
+  // on the region when the model's name for it is not the Bank's -- and drawn when
+  // they arrive. Other effects add their own layers and handlers to the map, so new
+  // zones, zone map or country build a new map rather than redrawing this one, as before.
+  // The zone-to-country table, by content: it is read again on every scenario
+  // change, and the same table should not build a new map.
+  const zcKey=useMemo(()=>zcmapRows.map(r=>`${r.z}\t${r.c}`).join('\n'),[zcmapRows]);
+  const [mapGen,setMapGen]=useState(0);
+  const drawnRef=useRef(null); // what the map was drawn with
+  const frameIso=region?memberIso(region,countryDecoded):null;
+  const baseMap=useBaseMap(containerRef,mapRef,{wbBase,theme,view:ZONE_MAP_VIEW,
+    scope:region?`${region.id}:${mapGen}`:null,
+    frame:region?(frameIso?{kind:'countries',id:frameIso}:{kind:'regions',id:region.id}):null});
   useEffect(()=>{
-    if(!containerRef.current||!region||!zonesGJ||!wbBase)return;
+    const map=baseMap;
+    if(!map||map!==mapRef.current||!region||!zonesGJ)return;
+    const drawnWith=[zonesGJ,zcKey,countryZoneIds.join('\n'),countryIsos.join()];
+    const drawn=drawnRef.current;
+    if(drawn?.map===map){
+      if(drawn.with.some((v,k)=>v!==drawnWith[k]))setMapGen(g=>g+1);
+      return;
+    }
+    drawnRef.current={map,with:drawnWith};
     const regionCountries=[...new Set(zcmapRows.map(r=>r.c))].sort();
     const colorMap={};regionCountries.forEach((c,i)=>{colorMap[c]=MAP_PALETTE[i%MAP_PALETTE.length];});
     const zoneCentroids = zoneCentroidMap(zonesGJ, linestringGJ);
     const cCoords=countryZoneIds.flatMap(z=>zoneCentroids[z]?[zoneCentroids[z]]:[]);
     const lons=cCoords.map(c=>c[0]),lats=cCoords.map(c=>c[1]);
     const bounds=lons.length?[[Math.min(...lons)-1.5,Math.min(...lats)-1.5],[Math.max(...lons)+1.5,Math.max(...lats)+1.5]]:null;
-    const map=new maplibregl.Map({container:containerRef.current,style:buildWbStyle(wbBase, getT(theme), ZONE_MAP_VIEW),center:[lons.length?lons.reduce((a,b)=>a+b,0)/lons.length:20,lats.length?lats.reduce((a,b)=>a+b,0)/lats.length:0],zoom:4,minZoom:1,maxZoom:14,bounds:bounds||undefined,fitBoundsOptions:{padding:60,maxZoom:7},canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl:false});
-    mapRef.current=map;
+    frameOnce(map,'zones',m=>{if(!bounds)return false;m.fitBounds(bounds,{padding:60,maxZoom:7,duration:0});});
     const popup=new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:10,className:`popup-${theme}`});
     const ntcClickPopup=new maplibregl.Popup({closeButton:true,closeOnClick:true,offset:10,className:`popup-${theme}`});
-    map.on('load',async()=>{
+    {
       const tv=getT(theme);
       const isoToC={};for(const f of zonesGJ.features)isoToC[f.properties.ISO_A3]=f.properties.c;
       const uIsos=[...new Set(zonesGJ.features.map(f=>f.properties.ISO_A3))];
@@ -411,9 +432,12 @@ export default function ResultsCountryPage() {
       markStyleReady(map);
       setMapLoadedCount(c=>c+1);
       raiseBoundaries(map);
-    });
-    return()=>{popup.remove();dotMarkersRef.current.forEach(m=>m.remove());dotMarkersRef.current=[];pieMarkersRef.current.forEach(m=>m.remove());pieMarkersRef.current=[];mapRef.current?.remove();};
-  },[region,theme,zonesGJ,zcmapRows,countryZoneIds,countryIsos,wbBase]); // eslint-disable-line
+    }
+    // Until the map goes: the map, not new data, ends what was drawn here. The
+    // markers belong to their own effects, which may already be placing them on
+    // the next map; the old ones went with the old map.
+    return()=>{if(mapRef.current!==map)popup.remove();};
+  },[baseMap,zonesGJ,zcmapRows,countryZoneIds,countryIsos]); // eslint-disable-line
 
   // External zone layers (added once map + ext data ready)
   useEffect(()=>{

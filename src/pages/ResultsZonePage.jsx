@@ -19,8 +19,9 @@ import {
 } from '../utils/extZones';
 import { addOffgridLayers } from '../utils/offgridZones';
 import { raiseBoundaries } from '../utils/basemap';
-import { buildWbStyle, useWbStyleBase, ZONE_MAP_VIEW } from '../utils/wbStyle';
+import { useWbStyleBase, ZONE_MAP_VIEW } from '../utils/wbStyle';
 import { source, markStyleReady, styleReady } from '../utils/mapSource';
+import { useBaseMap, frameOnce } from '../utils/mapLayers';
 import { zoneCentroidMap } from '../utils/centroids';
 import { usePromotedZones } from '../utils/usePromotedZones';
 import CJChart from '../components/CJChart';
@@ -164,17 +165,33 @@ export default function ResultsZonePage() {
   const dispSeasons = useMemo(()=>{const qs=new Set();for(const yr of Object.values(firstDisp[zoneIdDecoded]||{}))for(const q of Object.keys(yr))qs.add(q);return[...qs].sort();},[firstDisp,zoneIdDecoded]);
   const dispDays = useMemo(()=>{const ds=new Set();for(const yr of Object.values(firstDisp[zoneIdDecoded]||{}))for(const q of Object.values(yr))for(const d of Object.keys(q))ds.add(d);return[...ds].sort();},[firstDisp,zoneIdDecoded]);
 
-  // Map
+  // Map: built before the zones are in (utils/mapLayers), framed on the region --
+  // which country a zone is in is only known from the data -- and drawn when they
+  // arrive. Other effects add their own layers and handlers to the map, so new
+  // zones or another zone build a new map rather than redrawing this one, as before.
+  // The zone-to-country table, by content: it is read again on every scenario
+  // change, and the same table should not build a new map.
+  const zcKey=useMemo(()=>zcmapRows.map(r=>`${r.z}\t${r.c}`).join('\n'),[zcmapRows]);
+  const [mapGen,setMapGen]=useState(0);
+  const drawnRef=useRef(null); // what the map was drawn with
+  const baseMap=useBaseMap(containerRef,mapRef,{wbBase,theme,view:ZONE_MAP_VIEW,
+    scope:region?`${region.id}:${mapGen}`:null,frame:region?{kind:'regions',id:region.id}:null});
   useEffect(()=>{
-    if(!containerRef.current||!region||!zonesGJ||!wbBase)return;
+    const map=baseMap;
+    if(!map||map!==mapRef.current||!region||!zonesGJ)return;
+    const drawnWith=[zonesGJ,linestringGJ,zcKey,zoneIdDecoded];
+    const drawn=drawnRef.current;
+    if(drawn?.map===map){
+      if(drawn.with.some((v,k)=>v!==drawnWith[k]))setMapGen(g=>g+1);
+      return;
+    }
+    drawnRef.current={map,with:drawnWith};
     const regionCountries=[...new Set(zcmapRows.map(r=>r.c))].sort();const colorMap={};regionCountries.forEach((c,i)=>{colorMap[c]=MAP_PALETTE[i%MAP_PALETTE.length];});
     const zoneCentroids = zoneCentroidMap(zonesGJ, linestringGJ);
-    const center=zoneCentroids[zoneIdDecoded]||[35,39];
-    const map=new maplibregl.Map({container:containerRef.current,style:buildWbStyle(wbBase, getT(theme), ZONE_MAP_VIEW),center,zoom:5,minZoom:1,maxZoom:14,canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl:false});
-    mapRef.current=map;
+    frameOnce(map,'zones',m=>{const center=zoneCentroids[zoneIdDecoded];if(!center)return false;m.jumpTo({center,zoom:5});});
     const popup=new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:10,className:`popup-${theme}`});
     const ntcClickPopup=new maplibregl.Popup({closeButton:true,closeOnClick:true,offset:10,className:`popup-${theme}`});
-    map.on('load',async()=>{
+    {
       const tv=getT(theme);
       const isoToC={};for(const f of zonesGJ.features)isoToC[f.properties.ISO_A3]=f.properties.c;
       const uIsos=[...new Set(zonesGJ.features.map(f=>f.properties.ISO_A3))];
@@ -199,9 +216,10 @@ export default function ResultsZonePage() {
       markStyleReady(map);
       setMapLoadedCount(c=>c+1);
       raiseBoundaries(map);
-    });
-    return()=>{popup.remove();markerRef.current?.remove();markerRef.current=null;mapRef.current?.remove();};
-  },[region,theme,zonesGJ,linestringGJ,zcmapRows,zoneIdDecoded,wbBase]); // eslint-disable-line
+    }
+    // Until the map goes: the map, not new data, ends what was drawn here.
+    return()=>{if(mapRef.current===map)return;popup.remove();markerRef.current?.remove();markerRef.current=null;};
+  },[baseMap,zonesGJ,linestringGJ,zcmapRows,zoneIdDecoded]); // eslint-disable-line
 
   // External zone layers (added once map + ext data ready)
   useEffect(()=>{

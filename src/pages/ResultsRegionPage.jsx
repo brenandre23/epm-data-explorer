@@ -542,8 +542,11 @@ export default function ResultsRegionPage() {
   // page has its map at once. The zones are drawn on it when they arrive. Other
   // effects below add their own layers and handlers to the map, so new zones
   // (another run) build a new map rather than redrawing this one, as before.
+  // The zone-to-country table, by content: it is read again on every scenario
+  // change, and the same table should not build a new map.
+  const zcKey = useMemo(() => zcmapRows.map(r => `${r.z}\t${r.c}`).join('\n'), [zcmapRows]);
   const [mapGen, setMapGen] = useState(0);
-  const drawnRef = useRef(null); // { map, zones, zcmap } the map was drawn with
+  const drawnRef = useRef(null); // { map, zones, zcmap } the map was drawn with (zcmap by zcKey)
   const baseMap = useBaseMap(containerRef, mapRef, { wbBase, theme, view: ZONE_MAP_VIEW,
     scope: region ? `${region.id}:${mapGen}` : null, frame: region ? { kind: 'regions', id: region.id } : null });
 
@@ -552,10 +555,10 @@ export default function ResultsRegionPage() {
     if (!map || map !== mapRef.current || !region || !zonesGJ) return;
     const drawn = drawnRef.current;
     if (drawn?.map === map) {
-      if (drawn.zones !== zonesGJ || drawn.zcmap !== zcmapRows) setMapGen(g => g + 1);
+      if (drawn.zones !== zonesGJ || drawn.zcmap !== zcKey) setMapGen(g => g + 1);
       return;
     }
-    drawnRef.current = { map, zones: zonesGJ, zcmap: zcmapRows };
+    drawnRef.current = { map, zones: zonesGJ, zcmap: zcKey };
 
     const zcMap = Object.fromEntries(zcmapRows.map(r=>[r.z, r.c]));
     const regionCountries = [...new Set(zcmapRows.map(r=>r.c))].sort();
@@ -680,11 +683,10 @@ export default function ResultsRegionPage() {
       map.on('styledata', applyCorridors);
     }
 
-    // Until the map goes: the map, not new data, ends what was drawn here.
-    return () => {
-      if (mapRef.current === map) return;
-      popup.remove(); dotMarkersRef.current.forEach(m=>m.remove()); dotMarkersRef.current=[]; pieMarkersRef.current.forEach(m=>m.remove()); pieMarkersRef.current=[];
-    };
+    // Until the map goes: the map, not new data, ends what was drawn here. The
+    // markers belong to their own effects, which may already be placing them on
+    // the next map; the old ones went with the old map.
+    return () => { if (mapRef.current !== map) popup.remove(); };
   }, [baseMap, zonesGJ, zcmapRows]); // eslint-disable-line
 
   // ── External zone layers (added once map + ext data ready) ──────────────────
