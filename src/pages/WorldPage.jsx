@@ -5,6 +5,7 @@ import MapDownload from '../components/MapDownload';
 import { ttl } from '../utils/chartTitle';
 import { useTheme } from '../App';
 import { getT } from '../constants';
+import { prefetchPages } from './lazyPages';
 import { fetchGeo, prefetchGeo, fetchBboxes, addCountriesSource, regionFilter, raiseBoundaries, isNamed, isItalicName, nameHtml } from '../utils/basemap';
 import { buildWbStyle, useWbStyleBase, DEFAULT_WB_VIEW } from '../utils/wbStyle';
 import { dataPath } from '../utils/paths';
@@ -165,6 +166,9 @@ export default function WorldPage() {
       });
 
       raiseBoundaries(map);
+      // The colours are on: fetch the region pages' code now, so a click on a
+      // region does not wait for it.
+      prefetchPages();
     });
 
     return () => { disposed = true; mapRef.current?.remove(); setDisambig(null); };
