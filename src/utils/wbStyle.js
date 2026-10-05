@@ -367,7 +367,16 @@ export function buildWbStyle(base, t, view = DEFAULT_WB_VIEW) {
     // page draws and under the Bank's political stack.
     if (layer.type === 'background' && view.canvas === 'satellite') layers.push(satelliteLayer());
   }
-  const sources = { ...base.sources };
+  // The published sources carry both a `url` (the service description) and the
+  // `tiles` addresses it would yield. With `url` present MapLibre fetches the four
+  // descriptions one round trip after the style before it can ask for a tile; the
+  // descriptions set no zoom range beyond MapLibre's defaults, so the addresses
+  // alone draw the same map without those requests.
+  const sources = Object.fromEntries(Object.entries(base.sources).map(([id, src]) => {
+    if (!src.url || !src.tiles?.length) return [id, src];
+    const { url: _url, ...direct } = src; // eslint-disable-line no-unused-vars
+    return [id, direct];
+  }));
   // Published with minzoom 14 for a layer that ends at z11 -- see header.
   if (sources.wbg_places) sources.wbg_places = { ...sources.wbg_places, minzoom: 0 };
   if (view.canvas === 'satellite') sources[SATELLITE_SOURCE] = SATELLITE_SOURCE_DEF;

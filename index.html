@@ -5,6 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EPM Data Explorer</title>
+    <!-- The World Bank basemap comes from ArcGIS: open those connections and start
+         the style download now, instead of after the app bundle has loaded and run.
+         The style URL must match WB_BASEMAP_STYLE_URL in src/constants.js. -->
+    <link rel="preconnect" href="https://www.arcgis.com" crossorigin />
+    <link rel="preconnect" href="https://basemaps.arcgis.com" crossorigin />
+    <link rel="preconnect" href="https://vectortileservices.arcgis.com" crossorigin />
+    <link rel="preload" as="fetch" crossorigin="anonymous"
+          href="https://www.arcgis.com/sharing/rest/content/items/dcc1c1c0f97f4e458199888b0fc63896/resources/styles/root.json" />
   </head>
   <body>
     <div id="root"></div>
