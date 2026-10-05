@@ -381,6 +381,9 @@ export default function ResultsRegionPage() {
   useEffect(() => {
     if (!region?.epm) return;
     setLoadingRuns(true); setRunsResolved(false);
+    // The previous region's run and scenarios mean nothing here: asked for under
+    // this branch they only fail, and a late failure could wipe this region's list.
+    setSimRun(null); setScenarioList([]);
     const { branch, outputDir: fixedDir, simRuns: fixedRuns } = region.epm;
     if (fixedDir) {
       // regions.json overrides outputDir (e.g. R2 branches that skip GitHub API)
@@ -400,6 +403,9 @@ export default function ResultsRegionPage() {
   useEffect(() => {
     if (!region?.epm || !simRun) return;
     const { branch } = region.epm;
+    // A listing for a run the page has moved on from must not land: the fallback
+    // below can answer after the current run's listing and replace it.
+    let stale = false;
     // Try GitHub dir listing first; fall back to input_scenarios.csv (for R2 branches)
     fetchGitHubDir(branch, `${outputDir}/${simRun}`).then(async items => {
       let scens = (items||[]).filter(i=>i.type==='dir').map(i=>i.name).sort();
@@ -407,6 +413,7 @@ export default function ResultsRegionPage() {
         const fromCsv = await fetchInputScenarios(branch, outputDir, simRun);
         scens = (fromCsv || []).sort();
       }
+      if (stale) return;
       setScenarioList(scens); setEvScenarios(defaultScenarios(scens));
       const base = baseScenario(scens);
       if (scens.length) {
@@ -421,6 +428,7 @@ export default function ResultsRegionPage() {
       // the columns: pick the first few of the rest.
       setSummaryScen(defaultScenarios(scens.filter(s=>s!==base)));
     });
+    return () => { stale = true; };
   }, [region, simRun, outputDir]);
 
   useEffect(() => {
