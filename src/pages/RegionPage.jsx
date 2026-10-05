@@ -2528,14 +2528,18 @@ export default function RegionPage() {
           const iso = f?.properties.ISO_A3;
           if (iso && iso !== '-99') isoColorPairs.push([iso, countryColorMap[c] || '#888']);
         }
-        const fbIsos = [...new Set(isoColorPairs.map(([iso]) => iso))];
-        const fbExpr = ['match', ['get', 'ISO_A3'], ...isoColorPairs.flat(), 'transparent'];
-        map.addLayer({ id: 'zone-fill', type: 'fill', source: 'countries',
-          filter: ['in', ['get', 'ISO_A3'], ['literal', fbIsos]],
-          paint: { 'fill-color': fbExpr, 'fill-opacity': 0.28 } });
-        map.addLayer({ id: 'zone-border', type: 'line', source: 'countries',
-          filter: ['in', ['get', 'ISO_A3'], ['literal', fbIsos]],
-          paint: { 'line-color': fbExpr, 'line-width': 1.2, 'line-opacity': 0.75 } });
+        // A model whose zones carry no country code (São Tomé's) has nothing to
+        // colour, and a 'match' with no pairs is rejected as an invalid expression.
+        if (isoColorPairs.length) {
+          const fbIsos = [...new Set(isoColorPairs.map(([iso]) => iso))];
+          const fbExpr = ['match', ['get', 'ISO_A3'], ...isoColorPairs.flat(), 'transparent'];
+          map.addLayer({ id: 'zone-fill', type: 'fill', source: 'countries',
+            filter: ['in', ['get', 'ISO_A3'], ['literal', fbIsos]],
+            paint: { 'fill-color': fbExpr, 'fill-opacity': 0.28 } });
+          map.addLayer({ id: 'zone-border', type: 'line', source: 'countries',
+            filter: ['in', ['get', 'ISO_A3'], ['literal', fbIsos]],
+            paint: { 'line-color': fbExpr, 'line-width': 1.2, 'line-opacity': 0.75 } });
+        }
       }
 
       // NTC transmission lines
@@ -2639,7 +2643,7 @@ export default function RegionPage() {
     const after = map.getStyle();
     const layers = after.layers.map(l => l.id).filter(id => !layersBefore.has(id));
     const sources = Object.keys(after.sources).filter(id => !sourcesBefore.has(id));
-    setRegionHighlight(map, false);
+    setRegionHighlight(map, !map.getLayer('zone-fill')); // kept where no zones were drawn
     raiseBoundaries(map);
 
     // Trigger donut rendering via pieMode effect
