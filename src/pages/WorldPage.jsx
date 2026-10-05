@@ -11,6 +11,12 @@ import { buildWbStyle, useWbStyleBase, DEFAULT_WB_VIEW } from '../utils/wbStyle'
 import { dataPath } from '../utils/paths';
 import { fetchData } from '../utils/dataCache';
 
+// The world map's last view, kept for the visit: the page builds a new map each
+// time it opens and on every theme switch, and coming back from a region (or
+// clicking the title) should find the map where it was left, not at the start.
+// A reload starts from the default again.
+let lastView = { center: [20, 15], zoom: 2.2 };
+
 export default function WorldPage() {
   const { theme } = useTheme();
   const wbBase = useWbStyleBase();
@@ -58,13 +64,17 @@ export default function WorldPage() {
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: buildWbStyle(wbBase, getT(theme), DEFAULT_WB_VIEW),
-      center: [20, 15],
-      zoom: 2.2,
+      center: lastView.center,
+      zoom: lastView.zoom,
       minZoom: 1.5,
       maxZoom: 9,
       canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl: false,
     });
     mapRef.current = map;
+    map.on('moveend', () => {
+      const c = map.getCenter();
+      lastView = { center: [c.lng, c.lat], zoom: map.getZoom() };
+    });
 
     // Close popover on map move
     map.on('movestart', () => setDisambig(null));
