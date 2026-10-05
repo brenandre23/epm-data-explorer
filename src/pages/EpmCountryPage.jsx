@@ -425,8 +425,8 @@ export default function EpmCountryPage() {
 
     // Framed on the country's zones the first time they are drawn for it.
     frameOnce(map, countryNameDecoded, m => {
-      if (bounds) m.fitBounds(bounds, { padding: 60, maxZoom: 8, duration: 0 });
-      else if (lons.length) m.jumpTo({ center: [lons.reduce((a,b)=>a+b,0)/lons.length, lats.reduce((a,b)=>a+b,0)/lats.length], zoom: 4 });
+      if (!bounds) return false;
+      m.fitBounds(bounds, { padding: 60, maxZoom: 8, duration: 0 });
     });
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10,
       className: `popup-${theme}` });

@@ -21,16 +21,17 @@ const framed = new WeakMap();
  * Frame a map from its data, once per subject: the first draw of a page's layers
  * frames the map, and later ones (another folder, zone map or year) leave the
  * user's view alone -- unless the page moved to another country or zone on the
- * same map, which is framed afresh.
+ * same map, which is framed afresh. `frame` returns false when the data held
+ * nothing to frame on -- say the previous region's data, still in for a moment
+ * after the page moved -- and the map is framed when the right data arrives.
  *
  * @param {import('maplibre-gl').Map} map
  * @param {string} subject  what the page is about, e.g. the country or zone
- * @param {(map: import('maplibre-gl').Map) => void} frame
+ * @param {(map: import('maplibre-gl').Map) => boolean} frame
  */
 export function frameOnce(map, subject, frame) {
   if (framed.get(map) === subject) return;
-  framed.set(map, subject);
-  frame(map);
+  if (frame(map) !== false) framed.set(map, subject);
 }
 
 /**

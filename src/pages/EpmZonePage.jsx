@@ -18,8 +18,9 @@ import { zoneCentroidMap } from '../utils/centroids';
 import VariantPicker from '../components/VariantPicker';
 import ScenarioTab from '../components/ScenarioTab';
 import { raiseBoundaries } from '../utils/basemap';
-import { buildWbStyle, useWbStyleBase, ZONE_MAP_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
+import { useWbStyleBase, ZONE_MAP_VIEW, MAP_LABEL_FONT } from '../utils/wbStyle';
 import { source, layer } from '../utils/mapSource';
+import { useBaseMap, drawLayers, frameOnce } from '../utils/mapLayers';
 import { usePromotedEpmData } from '../utils/usePromotedZones';
 import CJChart from '../components/CJChart';
 import MapDownload from '../components/MapDownload';
@@ -321,27 +322,34 @@ export default function EpmZonePage() {
     return zoneCentroidMap(epmData?.zonesGJ, epmData?.linestringGJ);
   }, [epmData]);
 
-  // Build the map ONCE per region / data / theme — NOT per zone.
+  // Built before the EPM data (utils/mapLayers), framed on the region -- which
+  // country a zone is in is only known from the data -- so the page has its map
+  // at once. Built ONCE per region / theme — NOT per zone.
+  const baseMap = useBaseMap(containerRef, mapRef, { wbBase, theme, view: ZONE_MAP_VIEW, scope: region?.id,
+    frame: region ? { kind: 'regions', id: region.id } : null });
+
+  // The EPM layers, drawn when the data is in and swapped when it changes,
+  // without rebuilding the map.
   useEffect(() => {
-    if (!containerRef.current || !region || !epmData || !wbBase) return;
+    const map = baseMap;
+    if (!map || map !== mapRef.current || !region || !epmData) return;
     const { linestringGJ, zonesGJ } = epmData;
     if (!linestringGJ && !zonesGJ) return;
 
     const zcmapRows     = epmData.zcmap;
     const zoneToCountry = Object.fromEntries(zcmapRows.map(r => [r.z, r.c]));
 
-    const center = zoneCentroids[zoneIdDecoded] || [35, 39];
-
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: buildWbStyle(wbBase, getT(theme), ZONE_MAP_VIEW),
-      center, zoom: 5, minZoom: 1, maxZoom: 14, canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl: false,
+    // Centred on the zone the first time the layers are drawn; a later zone is
+    // centred by the zone-switch effect below.
+    frameOnce(map, zoneIdDecoded, m => {
+      const center = zoneCentroids[zoneIdDecoded];
+      if (!center) return false;
+      m.jumpTo({ center, zoom: 5 });
     });
-    mapRef.current = map;
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10,
       className: `popup-${theme}` });
 
-    map.on('load', async () => {
+    const undraw = drawLayers(map, () => {
       const tv = getT(theme);
 
 
@@ -414,16 +422,16 @@ export default function EpmZonePage() {
         markerRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -4] })
           .setLngLat(zoneCentroids[zoneIdDecoded]).addTo(map);
       }
-      raiseBoundaries(map);
     });
+    raiseBoundaries(map);
 
     return () => {
       popup.remove();
       markerRef.current?.remove();
       markerRef.current = null;
-      mapRef.current?.remove();
+      if (mapRef.current === map) undraw(); // else the map was rebuilt and took them with it
     };
-  }, [region, theme, epmData?.linestringGJ, epmData?.zonesGJ, wbBase]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [baseMap, epmData?.linestringGJ, epmData?.zonesGJ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Zone switch: update highlight + marker + recenter WITHOUT rebuilding the map ──
   useEffect(() => {
