@@ -1,4 +1,6 @@
-import { fetchTextOrNull } from './dataCache';
+import { fetchTextOrNull, fetchData } from './dataCache';
+import { dataPath } from './paths';
+import { listingFromManifest } from './epmManifest';
 
 // --- Data source ---
 // Model inputs and results come from the public EPM repo on GitHub, one branch per
@@ -22,8 +24,19 @@ const API_BASE = 'https://api.github.com/repos/ESMAP-World-Bank-Group/EPM';
 
 // ── Results: GitHub Contents API ──────────────────────────────────────────────
 
-/** List files/dirs at path in branch. Returns [{ name, type }] or null. */
+// The published listings (utils/epmManifest), read once per visit. A build
+// without the file falls back to the live API for everything.
+let manifestPromise = null;
+function epmManifest() {
+  if (!manifestPromise) manifestPromise = fetchData(dataPath('epm_manifest.json')).catch(() => null);
+  return manifestPromise;
+}
+
+/** List files/dirs at path in branch. Returns [{ name, type }] or null.
+ *  Answered from the published manifest where it covers the path, else by GitHub. */
 export async function fetchGitHubDir(branch, path) {
+  const listed = listingFromManifest(await epmManifest(), branch, path);
+  if (listed !== undefined) return listed;
   const url = `${API_BASE}/contents/${path}?ref=${branch}`;
   try {
     const text = await fetchTextOrNull(url, { headers: { Accept: 'application/vnd.github.v3+json' } });
