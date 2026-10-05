@@ -27,11 +27,12 @@ import {
 } from '../utils/extZones';
 import { addOffgridLayers } from '../utils/offgridZones';
 import { raiseBoundaries } from '../utils/basemap';
-import { buildWbStyle, useWbStyleBase, ZONE_MAP_VIEW } from '../utils/wbStyle';
+import { useWbStyleBase, ZONE_MAP_VIEW } from '../utils/wbStyle';
 import { baseFirst, baseScenario, defaultScenarios } from '../utils/scenarioOrder';
 import { physicalStats } from '../utils/summaryStats';
 import ScenarioPicker, { ScenarioKey } from '../components/ScenarioPicker';
 import { alive, source, markStyleReady, styleReady } from '../utils/mapSource';
+import { useBaseMap, frameOnce } from '../utils/mapLayers';
 import { zoneCentroidMap } from '../utils/centroids';
 import { priceDotEl } from '../utils/priceDot';
 import { fetchScenarioConfig, resolveFile, overridesFor } from '../utils/epmScenarios';
@@ -537,8 +538,24 @@ export default function ResultsRegionPage() {
   }, []);
 
   // ── Map ────────────────────────────────────────────────────────────────────
+  // Built before the zones are in (utils/mapLayers), framed on the region, so the
+  // page has its map at once. The zones are drawn on it when they arrive. Other
+  // effects below add their own layers and handlers to the map, so new zones
+  // (another run) build a new map rather than redrawing this one, as before.
+  const [mapGen, setMapGen] = useState(0);
+  const drawnRef = useRef(null); // { map, zones, zcmap } the map was drawn with
+  const baseMap = useBaseMap(containerRef, mapRef, { wbBase, theme, view: ZONE_MAP_VIEW,
+    scope: region ? `${region.id}:${mapGen}` : null, frame: region ? { kind: 'regions', id: region.id } : null });
+
   useEffect(() => {
-    if (!containerRef.current || !region || !zonesGJ || !wbBase) return;
+    const map = baseMap;
+    if (!map || map !== mapRef.current || !region || !zonesGJ) return;
+    const drawn = drawnRef.current;
+    if (drawn?.map === map) {
+      if (drawn.zones !== zonesGJ || drawn.zcmap !== zcmapRows) setMapGen(g => g + 1);
+      return;
+    }
+    drawnRef.current = { map, zones: zonesGJ, zcmap: zcmapRows };
 
     const zcMap = Object.fromEntries(zcmapRows.map(r=>[r.z, r.c]));
     const regionCountries = [...new Set(zcmapRows.map(r=>r.c))].sort();
@@ -553,18 +570,13 @@ export default function ResultsRegionPage() {
     // one has to be pushed again.
     ntcRef.current.applied = null; extFlowRef.current.applied = null;
 
-    const map = new maplibregl.Map({
-      container:containerRef.current, style:buildWbStyle(wbBase, getT(theme), ZONE_MAP_VIEW),
-      center:[lons.length?lons.reduce((a,b)=>a+b,0)/lons.length:20, lats.length?lats.reduce((a,b)=>a+b,0)/lats.length:0],
-      zoom:4, minZoom:1, maxZoom:14,
-      // Open already framed, so the view doesn't jump once the style has loaded.
-      bounds: bounds || undefined, fitBoundsOptions: { padding:60, maxZoom:8 },
-      canvasContextAttributes: { preserveDrawingBuffer: true }, attributionControl:false,
+    frameOnce(map, 'zones', m => {
+      if (!bounds) return false;
+      m.fitBounds(bounds, { padding:60, maxZoom:8, duration:0 });
     });
-    mapRef.current = map;
     const popup = new maplibregl.Popup({ closeButton:false, closeOnClick:false, offset:10, className:`popup-${theme}` });
 
-    map.on('load', async () => {
+    {
       const tv = getT(theme);
 
       // SDF arrow image (white triangle = inside, supports icon-color)
@@ -666,10 +678,14 @@ export default function ResultsRegionPage() {
       // on the map, so the style chatter of a hover filter costs nothing.
       applyCorridors();
       map.on('styledata', applyCorridors);
-    });
+    }
 
-    return () => { popup.remove(); dotMarkersRef.current.forEach(m=>m.remove()); dotMarkersRef.current=[]; pieMarkersRef.current.forEach(m=>m.remove()); pieMarkersRef.current=[]; mapRef.current?.remove(); };
-  }, [region, theme, zonesGJ, zcmapRows, wbBase]); // eslint-disable-line
+    // Until the map goes: the map, not new data, ends what was drawn here.
+    return () => {
+      if (mapRef.current === map) return;
+      popup.remove(); dotMarkersRef.current.forEach(m=>m.remove()); dotMarkersRef.current=[]; pieMarkersRef.current.forEach(m=>m.remove()); pieMarkersRef.current=[];
+    };
+  }, [baseMap, zonesGJ, zcmapRows]); // eslint-disable-line
 
   // ── External zone layers (added once map + ext data ready) ──────────────────
   useEffect(() => {
