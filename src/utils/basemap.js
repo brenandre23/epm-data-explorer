@@ -81,7 +81,8 @@ export async function fetchGeo(kind, id) {
 }
 
 function geoPath(kind, id) {
-  return dataPath(kind === 'world' ? 'geo/world.topo.json' : `geo/${kind}/${id}.topo.json`);
+  if (kind === 'world' || kind === 'world-lite') return dataPath(`geo/${kind}.topo.json`);
+  return dataPath(`geo/${kind}/${id}.topo.json`);
 }
 
 /**
@@ -94,7 +95,54 @@ function geoPath(kind, id) {
  * @param {string} [id]  region id or ISO_A3; none for 'world'
  */
 export function prefetchGeo(kind, id) {
-  fetchJson(geoPath(kind, id)).catch(() => {}); // the page's own fetchGeo() reports it
+  // The world's full detail is not prefetched: it would share the connection
+  // with the first pass and hold the colours back. addWorldSource() asks for it
+  // once the first pass is on screen.
+  fetchJson(geoPath(kind === 'world' ? 'world-lite' : kind, id)).catch(() => {}); // the page's own fetch reports it
+}
+
+/**
+ * The world geometry in two passes: world-lite first -- about a twentieth of the
+ * vertices, members of a region and the areas only -- so the colours are up
+ * almost at once, then world.topo.json in its place, fetched once the first pass
+ * is drawn. The page's layers key on properties, which the two files share, so
+ * filters and colours carry over; feature ids do not line up, so hover state is
+ * reset at the swap. Without world-lite (an older build of the data) it draws
+ * the full file directly.
+ *
+ * @param {import('maplibre-gl').Map} map
+ * @param {() => boolean} isDisposed  true once the page has dropped the map
+ * @returns {Promise<boolean>} false when the map went away first
+ */
+export async function addWorldSource(map, isDisposed) {
+  const lite = await fetchGeo('world-lite').catch(() => null);
+  if (isDisposed()) return false;
+  if (!lite) {
+    const fc = await fetchGeo('world');
+    if (isDisposed()) return false;
+    addCountriesSource(map, fc);
+    return true;
+  }
+  addCountriesSource(map, lite);
+  firstDraw(map, 'countries').then(() => fetchGeo('world')).then(fc => {
+    if (isDisposed() || !map.getSource('countries')) return;
+    map.removeFeatureState({ source: 'countries' });
+    map.getSource('countries').setData(fc);
+  }).catch(err => console.error('world geometry', err));
+  return true;
+}
+
+// Resolves on the first frame drawn after `sourceId` has loaded its data.
+function firstDraw(map, sourceId) {
+  return new Promise(resolve => {
+    const check = () => {
+      if (!map.getSource(sourceId) || !map.isSourceLoaded(sourceId)) return;
+      map.off('render', check);
+      resolve();
+    };
+    map.on('render', check);
+    map.triggerRepaint();
+  });
 }
 
 let bboxesPromise = null;

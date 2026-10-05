@@ -6,7 +6,7 @@ import { ttl } from '../utils/chartTitle';
 import { useTheme } from '../App';
 import { getT } from '../constants';
 import { prefetchPages } from './lazyPages';
-import { fetchGeo, prefetchGeo, fetchBboxes, addCountriesSource, regionFilter, raiseBoundaries, isNamed, isItalicName, nameHtml } from '../utils/basemap';
+import { prefetchGeo, addWorldSource, fetchBboxes, regionFilter, raiseBoundaries, isNamed, isItalicName, nameHtml } from '../utils/basemap';
 import { buildWbStyle, useWbStyleBase, DEFAULT_WB_VIEW } from '../utils/wbStyle';
 import { dataPath } from '../utils/paths';
 import { fetchData } from '../utils/dataCache';
@@ -73,10 +73,7 @@ export default function WorldPage() {
     // to arrive and draw, and the region colours have no reason to wait for them.
     let disposed = false;
     map.once('style.load', async () => {
-      const countries = await fetchGeo('world');
-      if (disposed) return;
-
-      addCountriesSource(map, countries);
+      if (!await addWorldSource(map, () => disposed)) return;
 
       // Non-EPM regions: no highlight, blend into background
 

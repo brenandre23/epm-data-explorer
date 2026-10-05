@@ -25,6 +25,9 @@ decodes it to GeoJSON for MapLibre; model/run geometry is independent.
 
 Outputs (public/data/geo/):
     world.topo.json             every feature, coarse -- world and meta-region pages
+    world-lite.topo.json        region members and areas only, much coarser and
+                                without small islands -- what the world page draws
+                                first, for the second until world.topo.json is in
     country/<ISO_A3>.topo.json  one country plus the areas it is a claimant of, detail
                               -- only for countries that belong to a region, the
                               only ones with a country page
@@ -92,6 +95,15 @@ WORLD_MIN_RING = 0      # drop rings whose extent is under this many degrees
 DETAIL_GRID = 0.00005   # ~6 m, below the detailed geometry simplification
 WORLD_GRID = 0.0005     # ~56 m, below the world geometry simplification
 PRECISION = 5           # decimal places kept, ~1 m
+# The first pass the world page draws while world.topo.json loads: only what
+# that page colours, at 0.1 deg (~11 km) and without islands under 0.05 deg --
+# about a tenth of the world file's vertices, most of which are small islands --
+# so the browser has the colours up in a fraction of the time. On screen for
+# about a second, then replaced, so every island still shows once the page has
+# loaded. Same values as the Regional Power Explorer's copy of this script.
+LITE_TOLERANCE = 0.1
+LITE_MIN_RING = 0.05
+LITE_GRID = 0.001       # ~110 m
 PAGE = 50               # features per request; geometry makes bigger pages time out
 
 # The Bank's own code where the app's differs (regions.json, every data file).
@@ -368,6 +380,13 @@ def write_json(path, obj, compact=True):
     return path.stat().st_size
 
 
+def lite_world(by_iso, areas, regions):
+    """world-lite's features: every region member and every area, coarsened."""
+    members = {c["iso"] for r in regions if r.get("type") != "meta" for c in r.get("countries", [])}
+    feats = [f for iso, f in by_iso.items() if iso in members] + areas
+    return [simplify_feature(f, LITE_TOLERANCE, LITE_MIN_RING) for f in feats]
+
+
 def write_topology(path, features, grid):
     topo, dropped = topology(features, grid)
     if dropped:
@@ -455,10 +474,21 @@ def main():
     ap.add_argument("--world-min-ring", type=float, default=WORLD_MIN_RING,
                     help="drop rings narrower than this many degrees from world.topo.json (default %(default)s)")
     ap.add_argument("--dry-run", action="store_true", help="fetch and report, write nothing")
+    ap.add_argument("--lite-only", action="store_true",
+                    help="write world-lite.topo.json from the existing world.topo.json; "
+                         "fetch nothing and leave every other file alone")
     args = ap.parse_args()
 
     regions_doc = json.loads(REGIONS_JSON.read_text(encoding="utf-8"))
     regions = regions_doc["regions"]
+
+    if args.lite_only:
+        world = read_topology(OUT_DIR / "world.topo.json")["features"]
+        by_iso = {f["properties"]["ISO_A3"]: f for f in world if not is_area(f)}
+        size = write_topology(OUT_DIR / "world-lite.topo.json",
+                              lite_world(by_iso, [f for f in world if is_area(f)], regions), LITE_GRID)
+        log(f"  world-lite.topo.json     {size:>10,} bytes")
+        return
 
     log(f"detail geometry @ {args.tolerance} deg")
     detail = [clean(f) for f in fetch_layer(args.tolerance)]
@@ -497,6 +527,8 @@ def main():
 
     sizes = {}
     sizes["world.topo.json"] = write_topology(OUT_DIR / "world.topo.json", world, WORLD_GRID)
+    sizes["world-lite.topo.json"] = write_topology(
+        OUT_DIR / "world-lite.topo.json", lite_world(by_iso, areas, regions), LITE_GRID)
     sizes["bboxes.json"] = write_json(OUT_DIR / "bboxes.json", boxes)
 
     paged = {c["iso"] for r in regions for c in r.get("countries", [])}
@@ -518,7 +550,7 @@ def main():
     update_regions_json(regions_doc, derived, dry_run=False)
 
     log(f"wrote {len(sizes)} files under {OUT_DIR.relative_to(_ROOT)}")
-    for k in ("world.topo.json", "bboxes.json"):
+    for k in ("world.topo.json", "world-lite.topo.json", "bboxes.json"):
         log(f"  {k:24s} {sizes[k]:>10,} bytes")
     region_sizes = sorted(((v, k) for k, v in sizes.items() if k.startswith("region/")), reverse=True)
     log("  largest region files: " + ", ".join(f"{k[7:]} {v:,}" for v, k in region_sizes[:5]))
